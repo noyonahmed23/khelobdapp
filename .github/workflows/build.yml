@@ -20,46 +20,52 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Generate Fresh Gradle 9.3.1 Wrapper
+    - name: Setup Gradle Wrapper
       run: |
-        sudo apt-get update
-        sudo apt-get install -y gradle
-        rm -rf gradlew gradlew.bat gradle/ app/gradle/
-        gradle wrapper --gradle-version 9.3.1
-        chmod +x gradlew
+        if [ ! -f ./gradlew ]; then
+          echo "Downloading Gradle 8.7..."
+          wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip
+          unzip -q gradle-8.7-bin.zip
+          ./gradle-8.7/bin/gradle wrapper --gradle-version 8.7
+          chmod +x gradlew
+        else
+          chmod +x gradlew
+        fi
 
-    - name: Fix Kotlin DSL build.gradle.kts variant error automatically
+    - name: Fix Kotlin DSL build.gradle.kts compatibility
       run: |
         python3 -c '
         path = "app/build.gradle.kts"
         try:
             with open(path, "r") as f:
-                lines = f.readlines()
-            new_lines = []
-            skip = False
-            brace_count = 0
-            for line in lines:
-                if "applicationVariants" in line or "productFlavors" in line:
-                    skip = True
-                    brace_count = line.count("{") - line.count("}")
-                    if brace_count <= 0:
-                        skip = False
-                    continue
-                if skip:
-                    brace_count += line.count("{") - line.count("}")
-                    if brace_count <= 0:
-                        skip = False
-                    continue
-                new_lines.append(line)
-            with open(path, "w") as f:
-                f.writelines(new_lines)
-            print("Successfully patched build.gradle.kts")
+                content = f.read()
+            if "applicationVariants" in content:
+                lines = content.splitlines()
+                new_lines = []
+                skip = False
+                brace_count = 0
+                for line in lines:
+                    if "applicationVariants" in line:
+                        skip = True
+                        brace_count = line.count("{") - line.count("}")
+                        if brace_count <= 0:
+                            skip = False
+                        continue
+                    if skip:
+                        brace_count += line.count("{") - line.count("}")
+                        if brace_count <= 0:
+                            skip = False
+                        continue
+                    new_lines.append(line)
+                with open(path, "w") as f:
+                    f.write("\n".join(new_lines) + "\n")
+                print("Successfully patched build.gradle.kts")
         except Exception as e:
             print("Skipped patching:", e)
         '
 
     - name: Build Debug APK
-      run: ./gradlew assembleDebug
+      run: ./gradlew assembleDebug --stacktrace
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4

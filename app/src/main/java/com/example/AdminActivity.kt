@@ -114,7 +114,7 @@ fun KheloBDAdminApp() {
                             Spacer(modifier = Modifier.width(8.dp))
                             Column {
                                 Text("KHELO BD ADMIN APP", color = EsportsGold, fontWeight = FontWeight.Black, fontSize = 13.sp, letterSpacing = 1.sp)
-                                Text("Logged in as ${currentUser.username} (${currentUser.role.name})", color = TextMuted, fontSize = 9.sp)
+                                Text("Logged in as ${currentUser.username} (${currentUser.role.name})", color = TextMuted, fontSize = 11.sp)
                             }
                         }
 
@@ -128,7 +128,7 @@ fun KheloBDAdminApp() {
                                 ) {
                                     Icon(Icons.Default.Security, contentDescription = null, tint = EsportsGold, modifier = Modifier.size(12.dp))
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Super Admin", color = EsportsGold, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                                    Text("Super Admin", color = EsportsGold, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
 
@@ -218,7 +218,7 @@ fun AdminLoginScreen(
         Text(
             text = "RESTRICTED TO PLATFORM ADMINISTRATORS",
             color = TextMuted,
-            fontSize = 10.sp,
+            fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
             letterSpacing = 1.sp
         )
@@ -359,7 +359,7 @@ fun AdminLoginScreen(
                     border = androidx.compose.foundation.BorderStroke(1.dp, DarkBorder),
                     modifier = Modifier.fillMaxWidth().height(36.dp)
                 ) {
-                    Text("Auto-fill admin credentials", color = TextMuted, fontSize = 10.sp)
+                    Text("Auto-fill admin credentials", color = TextMuted, fontSize = 11.sp)
                 }
             }
         }

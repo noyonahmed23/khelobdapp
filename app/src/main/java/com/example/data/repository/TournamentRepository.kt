@@ -103,6 +103,11 @@ object TournamentRepository {
     const val CHALLENGE_PLATFORM_FEE = 15.0  // retained by platform
 
     init {
+        SessionStore.restore()?.let { restored ->
+            _currentUser.value = restored
+            _isAuthenticated.value = true
+        }
+
         // Master admin initialized in database
         val masterAdmin = _currentUser.value
         _users.value = listOf(masterAdmin)
@@ -126,6 +131,7 @@ object TournamentRepository {
                 // Keep the logged-in profile fresh (wallet, stats, team, images) from DB
                 dbUsers.find { it.uid == _currentUser.value.uid }?.let { fresh ->
                     _currentUser.value = fresh
+                    if (_isAuthenticated.value) SessionStore.save(fresh)
                 }
             }
         )
@@ -185,6 +191,7 @@ object TournamentRepository {
         _users.value = _users.value + newUser
         _currentUser.value = newUser
         _isAuthenticated.value = true
+        SessionStore.save(newUser)
         FirebaseManager.syncUserToFirestore(newUser)
         logAdminAction("USER_REGISTERED", "User", newUser.uid, "New player registered: $cleanName ($cleanEmail)")
         return Result.success(newUser)
@@ -210,6 +217,7 @@ object TournamentRepository {
             )
             _currentUser.value = adminProfile
             _isAuthenticated.value = true
+            SessionStore.save(adminProfile)
             FirebaseManager.syncUserToFirestore(adminProfile)
             logAdminAction("ADMIN_LOGIN", "Auth", adminProfile.uid, "Admin Noyon authenticated successfully")
             return Result.success(adminProfile)
@@ -229,12 +237,14 @@ object TournamentRepository {
 
         _currentUser.value = existing
         _isAuthenticated.value = true
+        SessionStore.save(existing)
         logAdminAction("USER_LOGIN", "Auth", existing.uid, "Player authenticated: ${existing.username}")
         return Result.success(existing)
     }
 
     fun logout() {
         _isAuthenticated.value = false
+        SessionStore.clear()
     }
 
     fun updateProfile(fullName: String, gameUid: String, preferredGame: String) {
@@ -244,6 +254,7 @@ object TournamentRepository {
             preferredGame = preferredGame
         )
         _currentUser.value = updated
+        if (_isAuthenticated.value) SessionStore.save(updated)
         _users.value = _users.value.map {
             if (it.uid == updated.uid) updated else it
         }
@@ -267,7 +278,10 @@ object TournamentRepository {
         } else {
             _users.value + user
         }
-        if (_currentUser.value.uid == user.uid) _currentUser.value = user
+        if (_currentUser.value.uid == user.uid) {
+            _currentUser.value = user
+            if (_isAuthenticated.value) SessionStore.save(user)
+        }
         FirebaseManager.syncUserToFirestore(user)
     }
 
@@ -801,10 +815,35 @@ object TournamentRepository {
         _users.value.find { it.uid == userId }?.let { upsertUser(it.copy(teamId = null, teamName = null)) }
     }
 
-    fun challengeTeam(challengedTeamId: String, game: String, stakeAmount: Double) {
-        val myTeamId = _currentUser.value.teamId ?: return
-        val challengedTeam = _teams.value.find { it.id == challengedTeamId } ?: return
-        val myTeam = _teams.value.find { it.id == myTeamId } ?: return
+    fun challengeTeam(challengedTeamId: String, game: String, stakeAmount: Double): Result<Unit> {
+        val myTeamId = _currentUser.value.teamId
+            ?: return Result.failure(Exception("You must be in a team to challenge."))
+
+        val challengedTeam = _teams.value.find { it.id == challengedTeamId }
+            ?: return Result.failure(Exception("Opponent team not found."))
+        val myTeam = _teams.value.find { it.id == myTeamId }
+            ?: return Result.failure(Exception("Your team was not found."))
+
+        if (challengedTeam.id == myTeam.id) {
+            return Result.failure(Exception("You cannot challenge your own team."))
+        }
+        if (!challengedTeam.isLive) {
+            return Result.failure(Exception("This team is not live/available for a challenge."))
+        }
+        if (stakeAmount <= 0.0) {
+            return Result.failure(Exception("Challenge stake must be greater than zero."))
+        }
+        if (_currentUser.value.walletBalance < stakeAmount) {
+            return Result.failure(Exception("Your wallet does not have enough balance for this challenge."))
+        }
+        val duplicate = _challenges.value.any {
+            it.status == ChallengeStatus.PENDING &&
+                ((it.challengerTeamId == myTeam.id && it.challengedTeamId == challengedTeam.id) ||
+                 (it.challengerTeamId == challengedTeam.id && it.challengedTeamId == myTeam.id))
+        }
+        if (duplicate) {
+            return Result.failure(Exception("An active challenge already exists between these teams."))
+        }
 
         val challenge = TeamChallenge(
             challengerTeamId = myTeam.id,
@@ -817,31 +856,103 @@ object TournamentRepository {
         )
         _challenges.value = listOf(challenge) + _challenges.value
         FirebaseManager.syncChallengeToFirestore(challenge)
+        addNotification(
+            userId = challengedTeam.captainId,
+            title = "Team Challenge Received",
+            message = myTeam.name + " challenged your team for ৳" + stakeAmount.toInt() + ".",
+            type = "MATCH"
+        )
+        return Result.success(Unit)
     }
 
-    fun acceptChallenge(challengeId: String) {
-        val challenge = _challenges.value.find { it.id == challengeId } ?: return
+    fun acceptChallenge(challengeId: String): Result<Unit> {
+        val challenge = _challenges.value.find { it.id == challengeId }
+            ?: return Result.failure(Exception("Challenge not found."))
+        if (challenge.status != ChallengeStatus.PENDING) {
+            return Result.failure(Exception("This challenge is no longer pending."))
+        }
+
+        val myTeamId = _currentUser.value.teamId
+            ?: return Result.failure(Exception("You are not in a team."))
+        if (myTeamId != challenge.challengedTeamId) {
+            return Result.failure(Exception("Only the challenged team can accept this challenge."))
+        }
+
+        val myTeam = _teams.value.find { it.id == myTeamId }
+            ?: return Result.failure(Exception("Your team was not found."))
+        if (_currentUser.value.uid != myTeam.captainId) {
+            return Result.failure(Exception("Only the team captain can accept a team challenge."))
+        }
+        if (_currentUser.value.walletBalance < challenge.stakeAmount) {
+            return Result.failure(Exception("Your team captain wallet does not have enough balance."))
+        }
+
         val updatedChal = challenge.copy(status = ChallengeStatus.ACCEPTED)
         _challenges.value = _challenges.value.map {
             if (it.id == challengeId) updatedChal else it
         }
         FirebaseManager.syncChallengeToFirestore(updatedChal)
 
-        val match = MatchFixture(
-            tournamentId = "challenge_arena",
-            tournamentTitle = "Squad Challenge Clash",
-            game = challenge.game,
-            groupName = null,
-            round = "Exhibition Match",
-            participantAId = challenge.challengerTeamId,
-            participantAName = challenge.challengerTeamName,
-            participantBId = challenge.challengedTeamId,
-            participantBName = challenge.challengedTeamName,
-            scheduledTime = "Scheduled",
-            status = MatchStatus.SCHEDULED
+        addNotification(
+            userId = challenge.challengerTeamId,
+            title = "Team Challenge Accepted",
+            message = challenge.challengedTeamName + " accepted. Waiting for room credentials.",
+            type = "MATCH"
         )
-        _matches.value = listOf(match) + _matches.value
-        FirebaseManager.syncMatchToFirestore(match)
+        return Result.success(Unit)
+    }
+
+    fun setTeamChallengeRoom(challengeId: String, roomId: String, password: String): Result<Unit> {
+        val challenge = _challenges.value.find { it.id == challengeId }
+            ?: return Result.failure(Exception("Challenge not found."))
+        if (challenge.status != ChallengeStatus.ACCEPTED) {
+            return Result.failure(Exception("Accept the challenge before setting the room."))
+        }
+        val myTeamId = _currentUser.value.teamId
+            ?: return Result.failure(Exception("You are not in a team."))
+        val myTeam = _teams.value.find { it.id == myTeamId }
+        if (myTeamId != challenge.challengerTeamId || _currentUser.value.uid != myTeam?.captainId) {
+            return Result.failure(Exception("Only the challenging team captain can set the room."))
+        }
+        if (roomId.isBlank() || password.isBlank()) {
+            return Result.failure(Exception("Room ID and password are required."))
+        }
+        val updated = challenge.copy(
+            roomId = roomId.trim(),
+            roomPassword = password.trim(),
+            status = ChallengeStatus.ROOM_SET
+        )
+        _challenges.value = _challenges.value.map { if (it.id == challengeId) updated else it }
+        FirebaseManager.syncChallengeToFirestore(updated)
+        val opponentCaptain = _teams.value.find { it.id == challenge.challengedTeamId }?.captainId
+        if (!opponentCaptain.isNullOrBlank()) {
+            addNotification(
+                userId = opponentCaptain,
+                title = "Team Room Ready",
+                message = "Room ID: " + roomId + " | Password: " + password,
+                type = "MATCH"
+            )
+        }
+        return Result.success(Unit)
+    }
+
+    fun cancelChallenge(challengeId: String): Result<Unit> {
+        val challenge = _challenges.value.find { it.id == challengeId }
+            ?: return Result.failure(Exception("Challenge not found."))
+        if (challenge.status != ChallengeStatus.PENDING &&
+            challenge.status != ChallengeStatus.ACCEPTED &&
+            challenge.status != ChallengeStatus.ROOM_SET) {
+            return Result.failure(Exception("This challenge cannot be cancelled."))
+        }
+        val myTeamId = _currentUser.value.teamId
+            ?: return Result.failure(Exception("You are not in a team."))
+        if (myTeamId != challenge.challengerTeamId && myTeamId != challenge.challengedTeamId) {
+            return Result.failure(Exception("You are not part of this challenge."))
+        }
+        val updated = challenge.copy(status = ChallengeStatus.CANCELLED)
+        _challenges.value = _challenges.value.map { if (it.id == challengeId) updated else it }
+        FirebaseManager.syncChallengeToFirestore(updated)
+        return Result.success(Unit)
     }
 
     // ==================== 1v1 User Challenges ====================

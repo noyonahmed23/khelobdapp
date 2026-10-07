@@ -364,11 +364,21 @@ object FirebaseManager {
         val status = try { ChallengeStatus.valueOf(statusStr) } catch (_: Exception) { ChallengeStatus.PENDING }
         val roomId = doc.getString("roomId").takeIf { it?.isNotBlank() == true }
         val roomPassword = doc.getString("roomPassword").takeIf { it?.isNotBlank() == true }
+        val acceptedAtMillis = doc.getLong("acceptedAtMillis") ?: 0L
+        val roomSetAtMillis = doc.getLong("roomSetAtMillis") ?: 0L
+        val proofOpenAtMillis = doc.getLong("proofOpenAtMillis") ?: 0L
+        val deadlineAtMillis = doc.getLong("deadlineAtMillis") ?: 0L
+        val challengerProofUrl = doc.getString("challengerProofUrl").takeIf { it?.isNotBlank() == true }
+        val challengedProofUrl = doc.getString("challengedProofUrl").takeIf { it?.isNotBlank() == true }
+        val winnerTeamId = doc.getString("winnerTeamId").takeIf { it?.isNotBlank() == true }
         return TeamChallenge(
             id = id, challengerTeamId = cAId, challengerTeamName = cAName,
             challengedTeamId = cBId, challengedTeamName = cBName,
             game = game, stakeAmount = stake, status = status,
-            roomId = roomId, roomPassword = roomPassword
+            acceptedAtMillis = acceptedAtMillis, roomSetAtMillis = roomSetAtMillis,
+            proofOpenAtMillis = proofOpenAtMillis, deadlineAtMillis = deadlineAtMillis,
+            challengerProofUrl = challengerProofUrl, challengedProofUrl = challengedProofUrl,
+            roomId = roomId, roomPassword = roomPassword, winnerTeamId = winnerTeamId
         )
     }
 

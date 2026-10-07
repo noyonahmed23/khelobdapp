@@ -35,6 +35,7 @@ import com.example.ui.theme.*
 @Composable
 fun ProfileScreen(
     currentUser: UserProfile,
+    initialShowDeposit: Boolean = false,
     payments: List<PaymentTransaction>,
     settings: SystemSettings,
     allUsersRanking: List<UserProfile> = emptyList(),
@@ -48,10 +49,13 @@ fun ProfileScreen(
     val clipboard = LocalClipboardManager.current
     var showEditProfileDialog by remember { mutableStateOf(false) }
     var showDepositDialog by remember { mutableStateOf(false) }
-    var showApkDownloadDialog by remember { mutableStateOf(false) }
     var codeCopied by remember { mutableStateOf(false) }
     var isUploading by remember { mutableStateOf(false) }
     var uploadError by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(initialShowDeposit) {
+        if (initialShowDeposit) showDepositDialog = true
+    }
 
     val pickProfileImage = rememberImagePicker(
         storagePath = StorageManager.getProfilePicturePath(currentUser.uid),
@@ -113,7 +117,7 @@ fun ProfileScreen(
                         ) {
                             Icon(Icons.Default.AddAPhoto, contentDescription = null, tint = TextPrimary, modifier = Modifier.size(14.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Banner", color = TextPrimary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                            Text("Banner", color = TextPrimary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         }
                     }
 
@@ -165,14 +169,14 @@ fun ProfileScreen(
                         Text(
                             text = "UID: ${currentUser.uid}",
                             color = TextMuted,
-                            fontSize = 9.sp
+                            fontSize = 11.sp
                         )
                         Row(modifier = Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             Surface(color = DarkSurfaceCard, shape = RectangleShape) {
                                 Text(
                                     text = currentUser.preferredGame,
                                     color = KheloGreenBright,
-                                    fontSize = 9.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                 )
@@ -181,7 +185,7 @@ fun ProfileScreen(
                                 Text(
                                     text = currentUser.teamName ?: "Free Agent",
                                     color = EsportsCyan,
-                                    fontSize = 9.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                 )
@@ -246,7 +250,7 @@ fun ProfileScreen(
                         ) {
                             Icon(Icons.Default.Add, contentDescription = null, tint = DarkBg, modifier = Modifier.size(13.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Add Money", color = DarkBg, fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                            Text("Add Money", color = DarkBg, fontWeight = FontWeight.Bold, fontSize = 11.sp)
                         }
                     }
 
@@ -262,7 +266,7 @@ fun ProfileScreen(
                     Text(
                         text = "Use wallet balance to register instantly for tournaments without waiting for manual payment confirmation.",
                         color = TextSecondary,
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         modifier = Modifier.padding(top = 2.dp)
                     )
                 }
@@ -289,7 +293,7 @@ fun ProfileScreen(
                             Text("REFERRAL PROGRAM", color = TextPrimary, fontWeight = FontWeight.Black, fontSize = 11.sp)
                         }
                         Surface(color = Color(0xFF132B38), shape = RectangleShape) {
-                            Text("Earn ৳${settings.referralBonus.toInt()} / user", color = EsportsCyan, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+                            Text("Earn ৳${settings.referralBonus.toInt()} / user", color = EsportsCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
                         }
                     }
 
@@ -298,7 +302,7 @@ fun ProfileScreen(
                     Text(
                         text = "Share referral code with mobile gamers to earn bonus tournament tickets.",
                         color = TextSecondary,
-                        fontSize = 10.sp
+                        fontSize = 11.sp
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -321,57 +325,6 @@ fun ProfileScreen(
                         ) {
                             Text(if (codeCopied) "Copied!" else "Copy Code", color = EsportsCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         }
-                    }
-                }
-            }
-        }
-
-        // Official APK Downloads Card
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RectangleShape,
-                colors = CardDefaults.cardColors(containerColor = DarkSurfaceElevated),
-                border = borderStroke(1.dp, KheloGreen)
-            ) {
-                Column(modifier = Modifier.padding(14.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Download, contentDescription = null, tint = KheloGreenBright, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("OFFICIAL APK DOWNLOADS", color = TextPrimary, fontWeight = FontWeight.Black, fontSize = 12.sp)
-                        }
-                        Surface(color = Color(0xFF14301B), shape = RectangleShape) {
-                            Text("v1.0 Ready", color = KheloGreenBright, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    Text(
-                        text = "Separate APKs for Players (khelobd.apk) and Platform Admins (khelobdadmin.apk). Download or copy link below.",
-                        color = TextSecondary,
-                        fontSize = 10.sp
-                    )
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Button(
-                        onClick = { showApkDownloadDialog = true },
-                        shape = RectangleShape,
-                        colors = ButtonDefaults.buttonColors(containerColor = KheloGreen),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(36.dp)
-                            .testTag("download_apk_dialog_btn")
-                    ) {
-                        Icon(Icons.Default.CloudDownload, contentDescription = null, tint = DarkBg, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Get khelobd.apk & khelobdadmin.apk", color = DarkBg, fontWeight = FontWeight.Black, fontSize = 11.sp)
                     }
                 }
             }
@@ -400,7 +353,7 @@ fun ProfileScreen(
         if (myPayments.isEmpty()) {
             item {
                 Card(colors = CardDefaults.cardColors(containerColor = DarkSurfaceCard), shape = RectangleShape) {
-                    Text("No transactions recorded yet.", color = TextMuted, fontSize = 10.sp, modifier = Modifier.padding(10.dp))
+                    Text("No transactions recorded yet.", color = TextMuted, fontSize = 11.sp, modifier = Modifier.padding(10.dp))
                 }
             }
         } else {
@@ -419,7 +372,7 @@ fun ProfileScreen(
                     ) {
                         Column {
                             Text(trx.method, color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 11.sp)
-                            Text("TrxID: ${trx.transactionId}", color = TextSecondary, fontSize = 9.sp)
+                            Text("TrxID: ${trx.transactionId}", color = TextSecondary, fontSize = 11.sp)
                         }
                         Column(horizontalAlignment = Alignment.End) {
                             Text("৳${trx.amount.toInt()}", color = EsportsGold, fontWeight = FontWeight.Black, fontSize = 12.sp)
@@ -430,7 +383,7 @@ fun ProfileScreen(
                                 Text(
                                     trx.status.name,
                                     color = if (trx.status == PaymentStatus.PAID) KheloGreenBright else EsportsOrange,
-                                    fontSize = 8.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
                                 )
@@ -467,17 +420,12 @@ fun ProfileScreen(
         )
     }
 
-    if (showApkDownloadDialog) {
-        ApkDownloadDialog(
-            onDismiss = { showApkDownloadDialog = false }
-        )
-    }
-}
+
 
 @Composable
 fun StatItem(title: String, value: String, color: Color) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(title, color = TextMuted, fontSize = 7.sp, fontWeight = FontWeight.Bold)
+        Text(title, color = TextMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
         Text(value, color = color, fontSize = 12.sp, fontWeight = FontWeight.Black)
     }
 }
@@ -525,14 +473,14 @@ fun EditProfileDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Text("Primary Game:", color = TextSecondary, fontSize = 10.sp)
+                Text("Primary Game:", color = TextSecondary, fontSize = 11.sp)
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     listOf("Free Fire", "PUBG Mobile", "eFootball").forEach { g ->
                         FilterChip(
                             selected = preferredGame == g,
                             onClick = { preferredGame = g },
                             shape = RectangleShape,
-                            label = { Text(g, fontSize = 9.sp) },
+                            label = { Text(g, fontSize = 11.sp) },
                             colors = FilterChipDefaults.filterChipColors(selectedContainerColor = KheloGreen, selectedLabelColor = DarkBg),
                             modifier = Modifier.weight(1f)
                         )
@@ -578,7 +526,16 @@ fun DepositMoneyDialog(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Text("Add Money to Wallet", color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                Text("WALLET DEPOSIT", color = TextPrimary, fontSize = 19.sp, fontWeight = FontWeight.Black)
+                Text(
+                    "১) নিচের অফিসিয়াল bKash/Nagad নম্বরে Send Money করুন।\n" +
+                    "২) যে নম্বর থেকে টাকা পাঠিয়েছেন সেটা দিন।\n" +
+                    "৩) TrxID দিন এবং Submit করুন।\n" +
+                    "৪) Admin যাচাই করার পর আপনার Wallet-এ টাকা যোগ হবে।",
+                    color = TextSecondary,
+                    fontSize = 13.sp,
+                    lineHeight = 20.sp
+                )
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     listOf("bKash", "Nagad").forEach { method ->
@@ -595,7 +552,7 @@ fun DepositMoneyDialog(
 
                 Card(colors = CardDefaults.cardColors(containerColor = DarkSurfaceCard), shape = RectangleShape) {
                     Column(modifier = Modifier.padding(8.dp)) {
-                        Text("Send Money to official number:", color = TextSecondary, fontSize = 9.sp)
+                        Text("অফিসিয়াল নম্বরে Send Money করুন:", color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                         Text(
                             text = if (selectedMethod == "bKash") settings.bkashNumber else settings.nagadNumber,
                             color = EsportsGold,
@@ -608,7 +565,7 @@ fun DepositMoneyDialog(
                 OutlinedTextField(
                     value = amount,
                     onValueChange = { amount = it.filter { ch -> ch.isDigit() } },
-                    label = { Text("Deposit Amount (৳ BDT)") },
+                    label = { Text("ডিপোজিটের পরিমাণ (৳)") },
                     shape = RectangleShape,
                     colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = KheloGreen, unfocusedBorderColor = DarkBorder, focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary),
                     modifier = Modifier.fillMaxWidth().testTag("deposit_amount_input")
@@ -617,7 +574,7 @@ fun DepositMoneyDialog(
                 OutlinedTextField(
                     value = senderNumber,
                     onValueChange = { senderNumber = it },
-                    label = { Text("Sender Mobile Number") },
+                    label = { Text("যে মোবাইল নম্বর থেকে টাকা পাঠিয়েছেন") },
                     placeholder = { Text("e.g. 017XXXXXXXX") },
                     shape = RectangleShape,
                     colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = KheloGreen, unfocusedBorderColor = DarkBorder, focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary),
@@ -706,7 +663,7 @@ fun ApkDownloadDialog(
                         Text(
                             text = copiedMessage!!,
                             color = EsportsCyan,
-                            fontSize = 10.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(6.dp)
                         )
@@ -728,13 +685,13 @@ fun ApkDownloadDialog(
                         ) {
                             Text("1. Player App (khelobd.apk)", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                             Surface(color = Color(0xFF1B381A), shape = RectangleShape) {
-                                Text("PLAYERS", color = KheloGreenBright, fontSize = 8.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+                                Text("PLAYERS", color = KheloGreenBright, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
                             }
                         }
                         Text(
                             text = "Standard player client with registration, tournaments, matches, wallet deposits, and room ID notifications.",
                             color = TextMuted,
-                            fontSize = 9.sp,
+                            fontSize = 11.sp,
                             modifier = Modifier.padding(top = 2.dp, bottom = 6.dp)
                         )
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -752,7 +709,7 @@ fun ApkDownloadDialog(
                                 colors = ButtonDefaults.buttonColors(containerColor = KheloGreen),
                                 modifier = Modifier.weight(1f).height(32.dp).testTag("download_khelobd_apk_btn")
                             ) {
-                                Text("Download APK", color = DarkBg, fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                                Text("Download APK", color = DarkBg, fontWeight = FontWeight.Bold, fontSize = 11.sp)
                             }
                             OutlinedButton(
                                 onClick = {
@@ -763,7 +720,7 @@ fun ApkDownloadDialog(
                                 border = borderStroke(1.dp, DarkBorder),
                                 modifier = Modifier.weight(1f).height(32.dp).testTag("copy_khelobd_apk_link")
                             ) {
-                                Text("Copy Link", color = TextPrimary, fontSize = 10.sp)
+                                Text("Copy Link", color = TextPrimary, fontSize = 11.sp)
                             }
                         }
                     }
@@ -784,13 +741,13 @@ fun ApkDownloadDialog(
                         ) {
                             Text("2. Admin App (khelobdadmin.apk)", color = EsportsGold, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                             Surface(color = Color(0xFF382A0E), shape = RectangleShape) {
-                                Text("RESTRICTED", color = EsportsGold, fontSize = 8.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+                                Text("RESTRICTED", color = EsportsGold, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
                             }
                         }
                         Text(
                             text = "Dedicated Admin APK exclusively for platform moderators. Used for payment approvals, room credentials, and tournament lifecycle.",
                             color = TextMuted,
-                            fontSize = 9.sp,
+                            fontSize = 11.sp,
                             modifier = Modifier.padding(top = 2.dp, bottom = 6.dp)
                         )
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -808,7 +765,7 @@ fun ApkDownloadDialog(
                                 colors = ButtonDefaults.buttonColors(containerColor = EsportsGold),
                                 modifier = Modifier.weight(1f).height(32.dp).testTag("download_khelobdadmin_apk_btn")
                             ) {
-                                Text("Download APK", color = DarkBg, fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                                Text("Download APK", color = DarkBg, fontWeight = FontWeight.Bold, fontSize = 11.sp)
                             }
                             OutlinedButton(
                                 onClick = {
@@ -819,7 +776,7 @@ fun ApkDownloadDialog(
                                 border = borderStroke(1.dp, DarkBorder),
                                 modifier = Modifier.weight(1f).height(32.dp).testTag("copy_khelobdadmin_apk_link")
                             ) {
-                                Text("Copy Link", color = TextPrimary, fontSize = 10.sp)
+                                Text("Copy Link", color = TextPrimary, fontSize = 11.sp)
                             }
                         }
                     }

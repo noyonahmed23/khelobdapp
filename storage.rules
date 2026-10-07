@@ -1,0 +1,66 @@
+rules_version = '2';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Khelo BD — Firebase Storage security rules
+//
+// All uploaded media (avatars, banners, team images, 1v1 proof screenshots and
+// the admin welcome-popup banner) is public-read so Coil can render it via the
+// download URL. Writes are constrained to images under 5 MB and to the specific
+// folders the app uses.
+//
+// NOTE: Like Firestore, this app does not yet use Firebase Authentication, so
+// per-user ownership checks are not possible. Once Firebase Auth is adopted,
+// tighten `allow write` using the commented `isOwner()` guidance below.
+// ─────────────────────────────────────────────────────────────────────────────
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isImage() {
+      return request.resource != null &&
+        request.resource.contentType.matches('image/.*');
+    }
+
+    function underSize(maxMb) {
+      return request.resource != null &&
+        request.resource.size < maxMb * 1024 * 1024;
+    }
+
+    // Profile avatars & banners — keyed by user id in the path.
+    match /profile_pictures/{file} {
+      allow read: if true;
+      allow write: if isImage() && underSize(5);   // PRODUCTION: && request.auth.uid == userId
+    }
+    match /profile_banners/{file} {
+      allow read: if true;
+      allow write: if isImage() && underSize(5);
+    }
+
+    // Team logo & banner images.
+    match /team_images/{file} {
+      allow read: if true;
+      allow write: if isImage() && underSize(5);
+    }
+    match /team_banners/{file} {
+      allow read: if true;
+      allow write: if isImage() && underSize(5);
+    }
+
+    // 1v1 end-match proof screenshots reviewed by the admin.
+    match /challenge_proofs/{file} {
+      allow read: if true;
+      allow write: if isImage() && underSize(8);
+    }
+
+    // Admin-controlled welcome popup banner.
+    match /welcome_popup/{file} {
+      allow read: if true;
+      allow write: if isImage() && underSize(5);   // PRODUCTION: if isAdmin()
+    }
+
+    // Deny any other path.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

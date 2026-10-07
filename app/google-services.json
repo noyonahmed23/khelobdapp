@@ -1,0 +1,98 @@
+{
+  "project_info": {
+    "project_number": "162163324531",
+    "firebase_url": "https://khelo-bd-cbb6e-default-rtdb.firebaseio.com",
+    "project_id": "khelo-bd-cbb6e",
+    "storage_bucket": "khelo-bd-cbb6e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:162163324531:android:6fabc3ea108b6ad2cb5c06",
+        "android_client_info": {
+          "package_name": "com.bd.khelobd"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "162163324531-ehh400kbml54su04p3vf5qb0o9m60blf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC-Ly18kebLpIWlTnGRRMEuSK0h-xB8HWM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "162163324531-ehh400kbml54su04p3vf5qb0o9m60blf.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:162163324531:android:551754608ca184accb5c06",
+        "android_client_info": {
+          "package_name": "com.khelobd.admin"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "162163324531-ehh400kbml54su04p3vf5qb0o9m60blf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC-Ly18kebLpIWlTnGRRMEuSK0h-xB8HWM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "162163324531-ehh400kbml54su04p3vf5qb0o9m60blf.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:162163324531:android:9397a29e9addf4c9cb5c06",
+        "android_client_info": {
+          "package_name": "com.khelobd.user"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "162163324531-ehh400kbml54su04p3vf5qb0o9m60blf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC-Ly18kebLpIWlTnGRRMEuSK0h-xB8HWM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "162163324531-ehh400kbml54su04p3vf5qb0o9m60blf.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

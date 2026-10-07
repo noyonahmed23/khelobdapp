@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- PLAYER flavor (com.khelobd.user): only MainActivity is present/launchable.
+     AdminActivity is stripped from the merged manifest so the player APK has
+     no admin entry point at all. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <application>
+        <activity
+            android:name=".AdminActivity"
+            tools:node="remove" />
+    </application>
+
+</manifest>

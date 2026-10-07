@@ -1,0 +1,5 @@
+<resources>
+    <!-- app_name is provided per product flavor (resValue in app/build.gradle.kts):
+         user flavor  -> "Khelo BD"
+         admin flavor -> "Khelo BD Admin" -->
+</resources>

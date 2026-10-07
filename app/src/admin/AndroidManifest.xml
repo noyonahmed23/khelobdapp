@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ADMIN flavor (com.khelobd.admin): only AdminActivity is present/launchable.
+     The app opens directly to the Admin login + dashboard. MainActivity (the
+     player UI) is stripped from the merged manifest. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <application>
+        <activity
+            android:name=".MainActivity"
+            tools:node="remove" />
+    </application>
+
+</manifest>

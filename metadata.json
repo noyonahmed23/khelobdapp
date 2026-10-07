@@ -1,0 +1,6 @@
+{
+  "name": "Khelo BD",
+  "description": "Premier esports tournament platform for Free Fire, PUBG, and mobile gaming championships.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,169 +1,228 @@
 import com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy
 
 plugins {
-  alias(libs.plugins.android.application)
-  alias(libs.plugins.kotlin.compose)
-  alias(libs.plugins.google.devtools.ksp)
-  alias(libs.plugins.secrets)
-  alias(libs.plugins.google.services)
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.google.devtools.ksp)
+    alias(libs.plugins.secrets)
+    alias(libs.plugins.google.services)
 }
 
 android {
-  namespace = "com.example"
-  compileSdk { version = release(36) { minorApiLevel = 1 } }
+    namespace = "com.example"
 
-  defaultConfig {
-    minSdk = 24
-    targetSdk = 36
-    versionCode = 1
-    versionName = "1.0"
+    compileSdk {
+        version = release(36) {
+            minorApiLevel = 1
+        }
+    }
 
-    testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-  }
+    defaultConfig {
+        minSdk = 24
+        targetSdk = 36
+        versionCode = 1
+        versionName = "1.0"
 
-  // ── Two distinct apps from one codebase ──────────────────────────────────
-  // "user"  → Player app  (com.khelobd.user)  → khelobd.apk
-  // "admin" → Admin app   (com.khelobd.admin) → khelobdadmin.apk
-  // Different applicationIds let both install side-by-side on one device.
-  flavorDimensions += "app"
-  productFlavors {
-    create("user") {
-      dimension = "app"
-      applicationId = "com.khelobd.user"
-      resValue("string", "app_name", "Khelo BD")
-      buildConfigField("boolean", "ADMIN_APP", "false")
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
-    create("admin") {
-      dimension = "app"
-      applicationId = "com.khelobd.admin"
-      resValue("string", "app_name", "Khelo BD Admin")
-      buildConfigField("boolean", "ADMIN_APP", "true")
-    }
-  }
 
-  signingConfigs {
-    create("release") {
-      val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
-      storeFile = file(keystorePath)
-      storePassword = System.getenv("STORE_PASSWORD")
-      keyAlias = "upload"
-      keyPassword = System.getenv("KEY_PASSWORD")
-    }
-    create("debugConfig") {
-      storeFile = file("${rootDir}/debug.keystore")
-      storePassword = "android"
-      keyAlias = "androiddebugkey"
-      keyPassword = "android"
-    }
-  }
+    // ── Two distinct apps from one codebase ───────────────────────────────
+    // user  → Player app  → com.khelobd.user  → Khelo BD
+    // admin → Admin app   → com.khelobd.admin → Khelo BD Admin
+    flavorDimensions += "app"
 
-  buildTypes {
-    release {
-      isCrunchPngs = false
-      isMinifyEnabled = false
-      proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-      signingConfig = signingConfigs.getByName("release")
-    }
-    debug { signingConfig = signingConfigs.getByName("debugConfig") }
-  }
-  compileOptions {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
-  }
-  buildFeatures {
-    compose = true
-    buildConfig = true
-  }
-  testOptions { unitTests { isIncludeAndroidResources = true; isReturnDefaultValues = true } }
-  dependenciesInfo {
-    includeInApk = false
-    includeInBundle = true
-  }
+    productFlavors {
+        create("user") {
+            dimension = "app"
+            applicationId = "com.khelobd.user"
+            resValue("string", "app_name", "Khelo BD")
+            buildConfigField("boolean", "ADMIN_APP", "false")
+        }
 
-  // Rename the produced APKs to the required delivery names.
-  applicationVariants.all {
-    val flavor = productFlavors[0].name
-    val type = buildType.name
-    outputs.all {
-      val output = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
-      val base = if (flavor == "admin") "khelobdadmin" else "khelobd"
-      output.outputFileName = if (type == "release") "$base.apk" else "$base-$type.apk"
+        create("admin") {
+            dimension = "app"
+            applicationId = "com.khelobd.admin"
+            resValue("string", "app_name", "Khelo BD Admin")
+            buildConfigField("boolean", "ADMIN_APP", "true")
+        }
     }
-  }
+
+    signingConfigs {
+        create("release") {
+            val keystorePath =
+                System.getenv("KEYSTORE_PATH")
+                    ?: "${rootDir}/my-upload-key.jks"
+
+            storeFile = file(keystorePath)
+            storePassword = System.getenv("STORE_PASSWORD")
+            keyAlias = "upload"
+            keyPassword = System.getenv("KEY_PASSWORD")
+        }
+
+        create("debugConfig") {
+            storeFile = file("${rootDir}/debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
+    buildTypes {
+        release {
+            isCrunchPngs = false
+            isMinifyEnabled = false
+
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+
+            signingConfig = signingConfigs.getByName("release")
+        }
+
+        debug {
+            signingConfig = signingConfigs.getByName("debugConfig")
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
+
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
+
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+            isReturnDefaultValues = true
+        }
+    }
+
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = true
+    }
 }
 
-// Copies both release APKs into /build_apks after building them.
-// Run: ./gradlew collectReleaseApks
+/*
+ * APK rename
+ *
+ * AGP 9.x no longer supports the old applicationVariants API.
+ * Therefore we do the rename after the normal APKs are generated.
+ *
+ * Output:
+ *   user  release  -> build_apks/khelobd.apk
+ *   admin release  -> build_apks/khelobdadmin.apk
+ */
 tasks.register<Copy>("collectReleaseApks") {
-  dependsOn("assembleUserRelease", "assembleAdminRelease")
-  from(layout.buildDirectory.dir("outputs/apk/user/release")) { include("*.apk") }
-  from(layout.buildDirectory.dir("outputs/apk/admin/release")) { include("*.apk") }
-  into(rootProject.layout.projectDirectory.dir("build_apks"))
+    dependsOn(
+        "assembleUserRelease",
+        "assembleAdminRelease"
+    )
+
+    from(layout.buildDirectory.dir("outputs/apk/user/release")) {
+        include("*.apk")
+        rename { "khelobd.apk" }
+    }
+
+    from(layout.buildDirectory.dir("outputs/apk/admin/release")) {
+        include("*.apk")
+        rename { "khelobdadmin.apk" }
+    }
+
+    into(
+        rootProject.layout.projectDirectory.dir("build_apks")
+    )
 }
 
-// Configure the Secrets Gradle Plugin to use .env and .env.example files
-// to match the convention used in Web projects.
+// Configure the Secrets Gradle Plugin
 secrets {
-  propertiesFileName = ".env"
-  defaultPropertiesFileName = ".env.example"
-  ignoreList.add("FIREBASE_APPCHECK_DEBUG_TOKEN")
+    propertiesFileName = ".env"
+    defaultPropertiesFileName = ".env.example"
+    ignoreList.add("FIREBASE_APPCHECK_DEBUG_TOKEN")
 }
 
-googleServices { missingGoogleServicesStrategy = MissingGoogleServicesStrategy.WARN }
+googleServices {
+    missingGoogleServicesStrategy = MissingGoogleServicesStrategy.WARN
+}
 
-// Some unused dependencies are commented out below instead of being removed.
-// This makes it easy to add them back in the future if needed.
 dependencies {
-  implementation(platform(libs.androidx.compose.bom))
-  implementation(platform(libs.firebase.bom))
-  // implementation(libs.accompanist.permissions)
-  implementation(libs.androidx.activity.compose)
-  // implementation(libs.androidx.camera.camera2)
-  // implementation(libs.androidx.camera.core)
-  // implementation(libs.androidx.camera.lifecycle)
-  // implementation(libs.androidx.camera.view)
-  implementation(libs.androidx.compose.material.icons.core)
-  implementation(libs.androidx.compose.material.icons.extended)
-  implementation(libs.androidx.compose.material3)
-  implementation(libs.androidx.compose.ui)
-  implementation(libs.androidx.compose.ui.graphics)
-  implementation(libs.androidx.compose.ui.tooling.preview)
-  implementation(libs.androidx.core.ktx)
-  // implementation(libs.androidx.datastore.preferences)
-  implementation(libs.androidx.lifecycle.runtime.compose)
-  implementation(libs.androidx.lifecycle.runtime.ktx)
-  implementation(libs.androidx.lifecycle.viewmodel.compose)
-  implementation(libs.androidx.navigation.compose)
-  implementation(libs.androidx.room.ktx)
-  implementation(libs.androidx.room.runtime)
-  implementation(libs.coil.compose)
-  implementation(libs.converter.moshi)
-  implementation(libs.firebase.ai)
-  implementation(libs.firebase.firestore)
-  implementation(libs.firebase.auth)
-  implementation(libs.firebase.storage)
-  implementation(libs.firebase.appcheck.recaptcha)
-  implementation(libs.firebase.appcheck.debug)
-  implementation(libs.kotlinx.coroutines.android)
-  implementation(libs.kotlinx.coroutines.core)
-  implementation(libs.logging.interceptor)
-  implementation(libs.moshi.kotlin)
-  implementation(libs.okhttp)
-  // implementation(libs.play.services.location)
-  implementation(libs.retrofit)
-  testImplementation(libs.androidx.compose.ui.test.junit4)
-  testImplementation(libs.androidx.core)
-  testImplementation(libs.androidx.junit)
-  testImplementation(libs.junit)
-  testImplementation(libs.kotlinx.coroutines.test)
-  testImplementation(libs.robolectric)
-  androidTestImplementation(platform(libs.androidx.compose.bom))
-  androidTestImplementation(libs.androidx.compose.ui.test.junit4)
-  androidTestImplementation(libs.androidx.espresso.core)
-  androidTestImplementation(libs.androidx.junit)
-  androidTestImplementation(libs.androidx.runner)
-  debugImplementation(libs.androidx.compose.ui.test.manifest)
-  debugImplementation(libs.androidx.compose.ui.tooling)
-  "ksp"(libs.androidx.room.compiler)
-  "ksp"(libs.moshi.kotlin.codegen)
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(platform(libs.firebase.bom))
+
+    // implementation(libs.accompanist.permissions)
+
+    implementation(libs.androidx.activity.compose)
+
+    // implementation(libs.androidx.camera.camera2)
+    // implementation(libs.androidx.camera.core)
+    // implementation(libs.androidx.camera.lifecycle)
+    // implementation(libs.androidx.camera.view)
+
+    implementation(libs.androidx.compose.material.icons.core)
+    implementation(libs.androidx.compose.material.icons.extended)
+    implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.ui.graphics)
+    implementation(libs.androidx.compose.ui.tooling.preview)
+
+    implementation(libs.androidx.core.ktx)
+
+    // implementation(libs.androidx.datastore.preferences)
+
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+
+    implementation(libs.androidx.navigation.compose)
+
+    implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.room.runtime)
+
+    implementation(libs.coil.compose)
+
+    implementation(libs.converter.moshi)
+
+    implementation(libs.firebase.ai)
+    implementation(libs.firebase.firestore)
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.storage)
+    implementation(libs.firebase.appcheck.recaptcha)
+    implementation(libs.firebase.appcheck.debug)
+
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.coroutines.core)
+
+    implementation(libs.logging.interceptor)
+
+    implementation(libs.moshi.kotlin)
+
+    implementation(libs.okhttp)
+
+    // implementation(libs.play.services.location)
+
+    implementation(libs.retrofit)
+
+    testImplementation(libs.androidx.compose.ui.test.junit4)
+    testImplementation(libs.androidx.core)
+    testImplementation(libs.androidx.junit)
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.robolectric)
+
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.runner)
+
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
+    debugImplementation(libs.androidx.compose.ui.tooling)
+
+    "ksp"(libs.androidx.room.compiler)
+    "ksp"(libs.moshi.kotlin.codegen)
 }

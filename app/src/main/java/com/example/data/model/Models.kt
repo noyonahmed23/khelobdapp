@@ -139,6 +139,8 @@ enum class ChallengeStatus {
     PENDING,
     ACCEPTED,
     ROOM_SET,
+    PROOF_SUBMITTED,
+    UNDER_REVIEW,
     REJECTED,
     CANCELLED,
     SCHEDULED,

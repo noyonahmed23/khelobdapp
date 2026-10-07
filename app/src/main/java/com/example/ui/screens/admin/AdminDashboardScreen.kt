@@ -190,7 +190,7 @@ fun AdminDashboardScreen(
                                     Text(
                                         text = "$badgeCount",
                                         color = Color.White,
-                                        fontSize = 8.sp,
+                                        fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
                                         modifier = Modifier.padding(
                                             horizontal = 4.dp,
@@ -412,7 +412,7 @@ fun AdminOverviewTab(
                     Text(
                         "TOTAL PLATFORM VOLUME (VERIFIED)",
                         color = TextMuted,
-                        fontSize = 9.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
                     )
 
@@ -426,7 +426,7 @@ fun AdminOverviewTab(
                     Text(
                         "Includes tournament registration fees & player deposits",
                         color = TextSecondary,
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         modifier = Modifier.padding(top = 2.dp)
                     )
                 }
@@ -490,7 +490,7 @@ fun AdminOverviewTab(
                                 } else {
                                     EsportsRed
                                 },
-                                fontSize = 8.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(
                                     horizontal = 6.dp,
@@ -512,7 +512,7 @@ fun AdminOverviewTab(
                     Text(
                         text = workerStatus.lastSummary,
                         color = TextMuted,
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         modifier = Modifier.padding(top = 2.dp)
                     )
 
@@ -522,7 +522,7 @@ fun AdminOverviewTab(
                         Text(
                             text = cronFeedback!!,
                             color = EsportsGold,
-                            fontSize = 10.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -583,7 +583,7 @@ fun MetricCard(
             Text(
                 title,
                 color = TextMuted,
-                fontSize = 8.sp,
+                fontSize = 11.sp,
                 fontWeight = FontWeight.Bold
             )
 
@@ -659,7 +659,7 @@ fun AdminTournamentsTab(
                         "New Tournament",
                         color = DarkBg,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 10.sp
+                        fontSize = 11.sp
                     )
                 }
             }
@@ -697,7 +697,7 @@ fun AdminTournamentsTab(
                     Text(
                         "Game: ${tour.game} • Reg: ${tour.registeredCount}/${tour.maxParticipants} slots",
                         color = TextSecondary,
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         modifier = Modifier.padding(top = 2.dp)
                     )
 
@@ -722,7 +722,7 @@ fun AdminTournamentsTab(
                             label = {
                                 Text(
                                     "Status",
-                                    fontSize = 9.sp
+                                    fontSize = 11.sp
                                 )
                             },
                             trailingIcon = {
@@ -797,7 +797,7 @@ fun AdminTournamentsTab(
                                 } else {
                                     KheloGreenBright
                                 },
-                                fontSize = 10.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold
                             )
 
@@ -812,7 +812,7 @@ fun AdminTournamentsTab(
                                 } else {
                                     TextMuted
                                 },
-                                fontSize = 9.sp
+                                fontSize = 11.sp
                             )
                         }
 
@@ -846,7 +846,7 @@ fun AdminTournamentsTab(
                             Text(
                                 "Room",
                                 color = TextPrimary,
-                                fontSize = 10.sp
+                                fontSize = 11.sp
                             )
                         }
                     }
@@ -881,7 +881,7 @@ fun AdminTournamentsTab(
                             Text(
                                 "Lock Reg & Auto-Generate Fixtures",
                                 color = KheloGreenBright,
-                                fontSize = 10.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -921,7 +921,7 @@ fun AdminTournamentsTab(
                         Text(
                             "Delete Tournament",
                             color = EsportsRed,
-                            fontSize = 9.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -1060,7 +1060,7 @@ fun AdminTournamentRoomDialog(
                         Text(
                             "Reveal Room ID & Password in-app",
                             color = TextMuted,
-                            fontSize = 9.sp
+                            fontSize = 11.sp
                         )
                     }
 
@@ -1154,14 +1154,14 @@ fun AdminMatchesTab(
                     Text(
                         "${match.tournamentTitle} (${match.groupName ?: match.round})",
                         color = TextSecondary,
-                        fontSize = 10.sp
+                        fontSize = 11.sp
                     )
 
                     if (match.roomId != null) {
                         Text(
                             "Room: ${match.roomId} | Pass: ${match.roomPassword}",
                             color = KheloGreenBright,
-                            fontSize = 10.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(top = 2.dp)
                         )
@@ -1200,7 +1200,7 @@ fun AdminMatchesTab(
                                 "Assign Custom Room ID & Password"
                             },
                             color = TextPrimary,
-                            fontSize = 10.sp
+                            fontSize = 11.sp
                         )
                     }
                 }
@@ -1279,7 +1279,7 @@ fun AdminResultsReviewTab(
                                 Text(
                                     "NEEDS VERIFICATION",
                                     color = EsportsOrange,
-                                    fontSize = 8.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Black,
                                     modifier = Modifier.padding(
                                         horizontal = 4.dp,
@@ -1322,7 +1322,7 @@ fun AdminResultsReviewTab(
                                 "Approve & Advance Standings",
                                 color = DarkBg,
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 10.sp
+                                fontSize = 11.sp
                             )
                         }
                     }
@@ -1401,7 +1401,7 @@ fun AdminPaymentsTab(
                     Text(
                         "TrxID: ${trx.transactionId} • ${trx.note}",
                         color = TextSecondary,
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         modifier = Modifier.padding(top = 2.dp)
                     )
 
@@ -1431,7 +1431,7 @@ fun AdminPaymentsTab(
                                     "Verify & Credit Wallet",
                                     color = DarkBg,
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 9.sp
+                                    fontSize = 11.sp
                                 )
                             }
 
@@ -1455,7 +1455,7 @@ fun AdminPaymentsTab(
                                     "Reject",
                                     color = EsportsRed,
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 9.sp
+                                    fontSize = 11.sp
                                 )
                             }
                         }
@@ -1498,7 +1498,7 @@ fun AdminChallengeProofTab(
             Text(
                 "Winner receives ৳85 (platform fee ৳15 from the ৳100 pool). Review both screenshots before deciding.",
                 color = TextMuted,
-                fontSize = 9.sp,
+                fontSize = 11.sp,
                 modifier = Modifier.padding(top = 2.dp)
             )
         }
@@ -1578,7 +1578,7 @@ fun AdminChallengeProofTab(
                                     } else {
                                         TextSecondary
                                     },
-                                    fontSize = 8.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Black,
                                     modifier = Modifier.padding(
                                         horizontal = 5.dp,
@@ -1591,7 +1591,7 @@ fun AdminChallengeProofTab(
                         Text(
                             "${ch.game} • Pool ৳${(ch.stakeAmount * 2).toInt()} • ${if (ch.roomId != null) "Room ${ch.roomId}/${ch.roomPassword}" else "No room set"}",
                             color = TextSecondary,
-                            fontSize = 10.sp,
+                            fontSize = 11.sp,
                             modifier = Modifier.padding(top = 2.dp)
                         )
 
@@ -1630,7 +1630,7 @@ fun AdminChallengeProofTab(
                             Text(
                                 "Declare Winner:",
                                 color = TextSecondary,
-                                fontSize = 10.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold
                             )
 
@@ -1661,7 +1661,7 @@ fun AdminChallengeProofTab(
                                     Text(
                                         ch.challengerName,
                                         color = DarkBg,
-                                        fontSize = 9.sp,
+                                        fontSize = 11.sp,
                                         fontWeight = FontWeight.Black,
                                         maxLines = 1
                                     )
@@ -1688,7 +1688,7 @@ fun AdminChallengeProofTab(
                                     Text(
                                         ch.opponentName,
                                         color = DarkBg,
-                                        fontSize = 9.sp,
+                                        fontSize = 11.sp,
                                         fontWeight = FontWeight.Black,
                                         maxLines = 1
                                     )
@@ -1719,7 +1719,7 @@ fun AdminChallengeProofTab(
                                 Text(
                                     "Cancel / Void Challenge (refund not automatic)",
                                     color = EsportsRed,
-                                    fontSize = 9.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
@@ -1743,7 +1743,7 @@ private fun ProofColumn(
         Text(
             label,
             color = TextSecondary,
-            fontSize = 9.sp,
+            fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
             maxLines = 1
         )
@@ -1781,7 +1781,7 @@ private fun ProofColumn(
                     Text(
                         "No proof",
                         color = TextMuted,
-                        fontSize = 9.sp
+                        fontSize = 11.sp
                     )
                 }
             }
@@ -1851,7 +1851,7 @@ fun AdminWelcomePopupTab(
                 Text(
                     "Controls the popup every user sees on app open.",
                     color = TextMuted,
-                    fontSize = 9.sp,
+                    fontSize = 11.sp,
                     modifier = Modifier.padding(top = 2.dp)
                 )
             }
@@ -1898,7 +1898,7 @@ fun AdminWelcomePopupTab(
                                     } else {
                                         TextMuted
                                     },
-                                    fontSize = 9.sp
+                                    fontSize = 11.sp
                                 )
                             }
 
@@ -1980,7 +1980,7 @@ fun AdminWelcomePopupTab(
                         Text(
                             "Popup Image (optional)",
                             color = TextSecondary,
-                            fontSize = 10.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
                         )
 
@@ -2005,7 +2005,7 @@ fun AdminWelcomePopupTab(
                                 Text(
                                     "No image selected",
                                     color = TextMuted,
-                                    fontSize = 10.sp
+                                    fontSize = 11.sp
                                 )
                             }
                         }
@@ -2042,7 +2042,7 @@ fun AdminWelcomePopupTab(
                                         "Upload Image"
                                     },
                                     color = KheloGreenBright,
-                                    fontSize = 10.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
@@ -2063,7 +2063,7 @@ fun AdminWelcomePopupTab(
                                     Text(
                                         "Remove",
                                         color = EsportsRed,
-                                        fontSize = 10.sp,
+                                        fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold
                                     )
                                 }
@@ -2107,7 +2107,7 @@ fun AdminWelcomePopupTab(
                             Text(
                                 "Saved! Users will see this on next app open.",
                                 color = KheloGreenBright,
-                                fontSize = 10.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -2152,7 +2152,7 @@ fun AdminManageDbTab(
             Text(
                 "Full CRUD over users, wallets and teams.",
                 color = TextMuted,
-                fontSize = 9.sp,
+                fontSize = 11.sp,
                 modifier = Modifier.padding(top = 2.dp)
             )
         }
@@ -2214,7 +2214,7 @@ fun AdminManageDbTab(
                             } else {
                                 TextSecondary
                             },
-                            fontSize = 9.sp
+                            fontSize = 11.sp
                         )
                     }
 
@@ -2242,7 +2242,7 @@ fun AdminManageDbTab(
                             Text(
                                 "Wallet",
                                 color = KheloGreenBright,
-                                fontSize = 8.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -2272,7 +2272,7 @@ fun AdminManageDbTab(
                                     "Ban"
                                 },
                                 color = EsportsOrange,
-                                fontSize = 8.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -2299,7 +2299,7 @@ fun AdminManageDbTab(
                             Text(
                                 "Delete",
                                 color = EsportsRed,
-                                fontSize = 8.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -2349,7 +2349,7 @@ fun AdminManageDbTab(
                         Text(
                             "${team.members.size} members • Captain: ${team.captainName}",
                             color = TextSecondary,
-                            fontSize = 9.sp
+                            fontSize = 11.sp
                         )
                     }
 
@@ -2375,7 +2375,7 @@ fun AdminManageDbTab(
                         Text(
                             "Delete Team",
                             color = EsportsRed,
-                            fontSize = 9.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -2575,20 +2575,20 @@ fun AdminAuditLogTab(
                             log.action,
                             color = KheloGreenBright,
                             fontWeight = FontWeight.Bold,
-                            fontSize = 10.sp
+                            fontSize = 11.sp
                         )
 
                         Text(
                             log.adminName,
                             color = TextMuted,
-                            fontSize = 9.sp
+                            fontSize = 11.sp
                         )
                     }
 
                     Text(
                         log.details,
                         color = TextSecondary,
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         modifier = Modifier.padding(top = 2.dp)
                     )
                 }
@@ -2723,7 +2723,7 @@ fun CreateTournamentDialog(
                             )
                         } else {
                             Box(contentAlignment = Alignment.Center) {
-                                Text("LOGO", color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                Text("LOGO", color = TextMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -2745,7 +2745,7 @@ fun CreateTournamentDialog(
                             Text(
                                 logoError!!,
                                 color = EsportsRed,
-                                fontSize = 10.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         }

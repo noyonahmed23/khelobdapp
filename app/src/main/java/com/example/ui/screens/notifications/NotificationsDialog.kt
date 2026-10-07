@@ -2,6 +2,7 @@ package com.example.ui.screens.notifications
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -24,7 +25,8 @@ import com.example.ui.theme.*
 @Composable
 fun NotificationsDialog(
     notifications: List<NotificationItem>,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onNotificationClick: (NotificationItem) -> Unit = {}
 ) {
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -68,12 +70,16 @@ fun NotificationsDialog(
                     ) {
                         items(notifications) { item ->
                             Card(
-                                colors = CardDefaults.cardColors(containerColor = DarkSurfaceCard),
-                                shape = RectangleShape
+                                modifier = Modifier.clickable { onNotificationClick(item) },
+                                colors = CardDefaults.cardColors(
+                                    containerColor = if (item.isRead) DarkSurfaceCard else KheloGreenContainer
+                                ),
+                                shape = RectangleShape,
+                                border = borderStroke(1.dp, if (item.isRead) DarkBorder else KheloGreen)
                             ) {
                                 Column(modifier = Modifier.padding(10.dp)) {
                                     Text(item.title, color = KheloGreenBright, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                                    Text(item.message, color = TextSecondary, fontSize = 10.sp, modifier = Modifier.padding(top = 2.dp))
+                                    Text(item.message, color = TextSecondary, fontSize = 11.sp, modifier = Modifier.padding(top = 2.dp))
                                 }
                             }
                         }

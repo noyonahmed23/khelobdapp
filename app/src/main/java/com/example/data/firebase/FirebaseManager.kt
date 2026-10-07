@@ -703,6 +703,10 @@ object FirebaseManager {
                         "opponentProofUrl" to (challenge.opponentProofUrl ?: ""),
                         "winnerUid" to (challenge.winnerUid ?: ""),
                         "winnerName" to (challenge.winnerName ?: ""),
+                        "acceptedAtMillis" to challenge.acceptedAtMillis,
+                        "roomSetAtMillis" to challenge.roomSetAtMillis,
+                        "proofOpenAtMillis" to challenge.proofOpenAtMillis,
+                        "deadlineAtMillis" to challenge.deadlineAtMillis,
                         "timestamp" to challenge.timestamp
                     ), SetOptions.merge()
                 )?.await()

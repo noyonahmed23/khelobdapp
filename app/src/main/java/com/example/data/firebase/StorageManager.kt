@@ -46,7 +46,7 @@ object StorageManager {
             downloadUrl.toString()
         } catch (e: Exception) {
             Log.e(TAG, "Image upload failed for path $path", e)
-            throw e
+            null
         }
     }
 

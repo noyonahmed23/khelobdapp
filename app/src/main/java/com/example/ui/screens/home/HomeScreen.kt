@@ -169,7 +169,7 @@ fun HomeScreen(
                             Text(
                                 text = "RECENT CHAMPION",
                                 color = EsportsGold,
-                                fontSize = 9.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Black,
                                 letterSpacing = 1.sp
                             )
@@ -254,7 +254,7 @@ fun HeroBanner(
                             Text(
                                 text = "BANGLADESH PRO LEAGUE",
                                 color = KheloGreenBright,
-                                fontSize = 9.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Black
                             )
                         }
@@ -409,7 +409,7 @@ fun QuickActionButton(
             Text(
                 text = subtitle,
                 color = TextMuted,
-                fontSize = 8.sp,
+                fontSize = 11.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -441,13 +441,13 @@ fun HomeMatchItem(
                     Text(
                         text = match.game.uppercase(),
                         color = KheloGreenBright,
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Black
                     )
                     Text(
                         text = " • ${match.tournamentTitle}",
                         color = TextSecondary,
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.widthIn(max = 160.dp)
@@ -513,7 +513,7 @@ fun HomeMatchItem(
                     Text(
                         text = match.scheduledTime,
                         color = TextMuted,
-                        fontSize = 10.sp
+                        fontSize = 11.sp
                     )
                 }
 
@@ -521,7 +521,7 @@ fun HomeMatchItem(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(imageVector = Icons.Default.Key, contentDescription = null, tint = KheloGreenBright, modifier = Modifier.size(11.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Room Ready — Tap to view", color = KheloGreenBright, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        Text("Room Ready — Tap to view", color = KheloGreenBright, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }

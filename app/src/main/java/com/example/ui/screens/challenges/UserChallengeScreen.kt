@@ -95,7 +95,7 @@ fun UserChallengeScreen(
                     onReject = { handle(onRejectChallenge(challenge.id)) },
                     onCancel = { handle(onCancelChallenge(challenge.id)) },
                     onSetRoom = { room, pass -> handle(onSetRoomCredentials(challenge.id, room, pass)) },
-                    onReportWrongRoom = { handle(onReportWrongRoom(challenge.id)) },
+                    onReportWrongRoom = { onReportWrongRoom(challenge.id) },
                     onProof = { url -> handle(onSubmitProof(challenge.id, url)) }
                 )
             }

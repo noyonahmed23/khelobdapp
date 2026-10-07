@@ -2,66 +2,42 @@ name: Android CI
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: ["main", "master"]
   pull_request:
-    branches: [ "main", "master" ]
+    branches: ["main", "master"]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: '17'
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
 
-    - name: Download Direct Gradle Binary
-      run: |
-        wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip
-        unzip -q gradle-8.7-bin.zip
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
 
-    - name: Fix Kotlin DSL build.gradle.kts compatibility
-      run: |
-        python3 -c '
-        path = "app/build.gradle.kts"
-        try:
-            with open(path, "r") as f:
-                content = f.read()
-            if "applicationVariants" in content:
-                lines = content.splitlines()
-                new_lines = []
-                skip = False
-                brace_count = 0
-                for line in lines:
-                    if "applicationVariants" in line:
-                        skip = True
-                        brace_count = line.count("{") - line.count("}")
-                        if brace_count <= 0:
-                            skip = False
-                        continue
-                    if skip:
-                        brace_count += line.count("{") - line.count("}")
-                        if brace_count <= 0:
-                            skip = False
-                        continue
-                    new_lines.append(line)
-                with open(path, "w") as f:
-                    f.write("\n".join(new_lines) + "\n")
-                print("Successfully patched build.gradle.kts")
-        except Exception as e:
-            print("Skipped patching:", e)
-        '
+      - name: Make Gradle executable
+        run: chmod +x ./gradlew
 
-    - name: Build Debug APK Directly with Gradle Binary
-      run: ./gradle-8.7/bin/gradle assembleDebug --stacktrace
+      - name: Clean project
+        run: ./gradlew clean
 
-    - name: Upload APK Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: app-debug-apk
-        path: app/build/outputs/apk/debug/app-debug.apk
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug --stacktrace --no-daemon
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error

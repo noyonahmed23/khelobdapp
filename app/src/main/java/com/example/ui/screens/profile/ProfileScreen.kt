@@ -421,6 +421,7 @@ fun ProfileScreen(
     }
 
 
+}
 
 @Composable
 fun StatItem(title: String, value: String, color: Color) {
@@ -528,10 +529,10 @@ fun DepositMoneyDialog(
             ) {
                 Text("WALLET DEPOSIT", color = TextPrimary, fontSize = 19.sp, fontWeight = FontWeight.Black)
                 Text(
-                    "১) নিচের অফিসিয়াল bKash/Nagad নম্বরে Send Money করুন।\n" +
-                    "২) যে নম্বর থেকে টাকা পাঠিয়েছেন সেটা দিন।\n" +
-                    "৩) TrxID দিন এবং Submit করুন।\n" +
-                    "৪) Admin যাচাই করার পর আপনার Wallet-এ টাকা যোগ হবে।",
+                    "১) নিচের অফিসিয়াল bKash/Nagad নম্বরে Send Money করুন.\n" +
+                    "২) যে নম্বর থেকে টাকা পাঠিয়েছেন সেটি দিন.\n" +
+                    "৩) TrxID দিন এবং Submit করুন.\n" +
+                    "৪) Admin যাচাই করার পর আপনার Wallet-এ টাকা যোগ হবে.",
                     color = TextSecondary,
                     fontSize = 13.sp,
                     lineHeight = 20.sp
@@ -552,7 +553,7 @@ fun DepositMoneyDialog(
 
                 Card(colors = CardDefaults.cardColors(containerColor = DarkSurfaceCard), shape = RectangleShape) {
                     Column(modifier = Modifier.padding(8.dp)) {
-                        Text("অফিসিয়াল নম্বরে Send Money করুন:", color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        Text("Send Money to official number:", color = TextSecondary, fontSize = 11.sp)
                         Text(
                             text = if (selectedMethod == "bKash") settings.bkashNumber else settings.nagadNumber,
                             color = EsportsGold,
@@ -565,7 +566,7 @@ fun DepositMoneyDialog(
                 OutlinedTextField(
                     value = amount,
                     onValueChange = { amount = it.filter { ch -> ch.isDigit() } },
-                    label = { Text("ডিপোজিটের পরিমাণ (৳)") },
+                    label = { Text("Deposit Amount (৳ BDT)") },
                     shape = RectangleShape,
                     colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = KheloGreen, unfocusedBorderColor = DarkBorder, focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary),
                     modifier = Modifier.fillMaxWidth().testTag("deposit_amount_input")
@@ -574,7 +575,7 @@ fun DepositMoneyDialog(
                 OutlinedTextField(
                     value = senderNumber,
                     onValueChange = { senderNumber = it },
-                    label = { Text("যে মোবাইল নম্বর থেকে টাকা পাঠিয়েছেন") },
+                    label = { Text("Sender Mobile Number") },
                     placeholder = { Text("e.g. 017XXXXXXXX") },
                     shape = RectangleShape,
                     colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = KheloGreen, unfocusedBorderColor = DarkBorder, focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary),

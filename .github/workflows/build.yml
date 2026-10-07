@@ -20,13 +20,12 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Set up Gradle
-      uses: gradle/actions/setup-gradle@v3
-
-    - name: Fix gradlew permissions and line endings
+    - name: Generate and Fix Gradle Wrapper
       run: |
+        sudo apt-get update
+        sudo apt-get install -y gradle
+        gradle wrapper
         chmod +x gradlew
-        sed -i -e 's/\r$//' gradlew
 
     - name: Build Debug APK
       run: ./gradlew assembleDebug

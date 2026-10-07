@@ -541,65 +541,266 @@ fun HomeTournamentCard(
             kotlinx.coroutines.delay(1000L)
         }
     }
-    val start = tournament.startAtMillis
-    val countdown = if (start > 0L) (start - now).coerceAtLeast(0L) else 0L
-    val totalSeconds = countdown / 1000L
-    val days = totalSeconds / 86400L
-    val hours = (totalSeconds % 86400L) / 3600L
-    val minutes = (totalSeconds % 3600L) / 60L
-    val seconds = totalSeconds % 60L
-    val progress = (tournament.registeredCount.toFloat() / tournament.maxParticipants.coerceAtLeast(1)).coerceIn(0f, 1f)
+
+    val startAt = tournament.startAtMillis
+    val diff = if (startAt > 0L) startAt - now else 0L
+    val fiveMinutes = 5 * 60 * 1000L
+    val isFinished = tournament.status == TournamentStatus.COMPLETED ||
+        tournament.status == TournamentStatus.CANCELLED
+    val isLive = tournament.status == TournamentStatus.GROUP_STAGE ||
+        tournament.status == TournamentStatus.KNOCKOUT ||
+        tournament.status == TournamentStatus.FINAL
+
     val statusLabel = when {
-        tournament.status == TournamentStatus.COMPLETED -> "FINISHED"
         tournament.status == TournamentStatus.CANCELLED -> "CANCELLED"
+        tournament.status == TournamentStatus.COMPLETED -> "FINISHED"
+        isLive -> "LIVE"
         tournament.status == TournamentStatus.REGISTRATION_CLOSED -> "CLOSED"
-        tournament.status == TournamentStatus.GROUP_STAGE || tournament.status == TournamentStatus.KNOCKOUT || tournament.status == TournamentStatus.FINAL -> "LIVE"
+        startAt > 0L && diff in 1..fiveMinutes && tournament.status == TournamentStatus.REGISTRATION -> "STARTING SOON"
+        startAt > 0L && diff <= 0L && tournament.status == TournamentStatus.REGISTRATION -> "LIVE"
         else -> "OPEN"
     }
+
     val statusColor = when (statusLabel) {
-        "OPEN" -> KheloGreenBright
-        "CLOSED" -> EsportsOrange
+        "OPEN" -> KheloGreen
+        "STARTING SOON", "CLOSED" -> EsportsOrange
         "LIVE" -> EsportsCyan
         "FINISHED", "CANCELLED" -> EsportsRed
         else -> TextSecondary
     }
-    Card(Modifier.fillMaxWidth().clickable { onClick() }.testTag("tournament_card_${tournament.id}"), shape = RectangleShape, colors = CardDefaults.cardColors(containerColor = DarkSurfaceElevated), border = borderStroke(2.dp, statusColor)) {
-        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(58.dp).background(KheloGreenContainer, RectangleShape), contentAlignment = Alignment.Center) {
-                    if (tournament.gameLogoUrl.isNotBlank()) AsyncImage(model = tournament.gameLogoUrl, contentDescription = tournament.game, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-                    else Text(tournament.game.take(2).uppercase(), color = KheloGreenBright, fontWeight = FontWeight.Black, fontSize = 17.sp)
-                }
-                Spacer(Modifier.width(10.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(tournament.title, color = TextPrimary, fontWeight = FontWeight.Black, fontSize = 19.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    Text(tournament.game + " • " + tournament.gameMode, color = KheloGreenBright, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                }
-                Surface(color = statusColor.copy(alpha = 0.12f), border = borderStroke(1.dp, statusColor), shape = RectangleShape) {
-                    Text(statusLabel, color = statusColor, fontWeight = FontWeight.Black, fontSize = 11.sp, modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp))
-                }
-            }
-            if (start > 0L && countdown > 0L) {
-                Surface(Modifier.fillMaxWidth(), color = Color(0xFFFFF7E5), border = borderStroke(1.dp, EsportsGold), shape = RectangleShape) {
-                    Column(Modifier.padding(10.dp)) {
-                        Text("STARTS IN", color = EsportsGold, fontWeight = FontWeight.Black, fontSize = 11.sp)
-                        Text((if (days > 0) "${days}d " else "") + "%02dh %02dm %02ds".format(hours, minutes, seconds), color = TextPrimary, fontWeight = FontWeight.Black, fontSize = 23.sp)
+
+    val canJoin = statusLabel == "OPEN" &&
+        tournament.registeredCount < tournament.maxParticipants
+
+    val progress = (
+        tournament.registeredCount.toFloat() /
+            tournament.maxParticipants.coerceAtLeast(1)
+        ).coerceIn(0f, 1f)
+
+    val totalSeconds = diff.coerceAtLeast(0L) / 1000L
+    val days = totalSeconds / 86400L
+    val hours = (totalSeconds % 86400L) / 3600L
+    val minutes = (totalSeconds % 3600L) / 60L
+    val seconds = totalSeconds % 60L
+
+    val countdownText = when {
+        startAt <= 0L -> "সময় সেট করা হয়নি"
+        diff <= 0L -> "MATCH TIME"
+        days > 0L -> "%02dd %02dh %02dm %02ds".format(days, hours, minutes, seconds)
+        else -> "%02dh %02dm %02ds".format(hours, minutes, seconds)
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .testTag("tournament_card_" + tournament.id),
+        shape = RectangleShape,
+        colors = CardDefaults.cardColors(containerColor = DarkSurfaceElevated),
+        border = borderStroke(2.dp, statusColor)
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    modifier = Modifier.size(64.dp),
+                    shape = RectangleShape,
+                    color = DarkSurfaceCard,
+                    border = borderStroke(1.dp, statusColor.copy(alpha = 0.5f))
+                ) {
+                    if (tournament.gameLogoUrl.isNotBlank()) {
+                        AsyncImage(
+                            model = tournament.gameLogoUrl,
+                            contentDescription = tournament.game,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                Icons.Default.SportsEsports,
+                                contentDescription = tournament.game,
+                                tint = KheloGreen,
+                                modifier = Modifier.size(30.dp)
+                            )
+                        }
                     }
                 }
-            } else {
-                Text("START: ${tournament.startDate} • ${tournament.startTime}", color = TextPrimary, fontWeight = FontWeight.Black, fontSize = 14.sp)
+
+                Spacer(modifier = Modifier.width(10.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        tournament.title,
+                        color = TextPrimary,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 20.sp,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        tournament.game,
+                        color = KheloGreen,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 14.sp
+                    )
+                    Text(
+                        "MODE: " + tournament.gameMode + "  •  MAP: " + tournament.mapName,
+                        color = TextSecondary,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp
+                    )
+                }
+
+                Surface(
+                    color = statusColor.copy(alpha = 0.12f),
+                    border = borderStroke(1.dp, statusColor),
+                    shape = RectangleShape
+                ) {
+                    Text(
+                        statusLabel,
+                        color = statusColor,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 11.sp,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
+                    )
+                }
             }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Column { Text("PRIZE POOL", color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold); Text("৳${tournament.prizePool.toInt()}", color = EsportsGold, fontWeight = FontWeight.Black, fontSize = 17.sp) }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) { Text("ENTRY", color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold); Text(if (tournament.entryFee == 0.0) "FREE" else "৳${tournament.entryFee.toInt()}", color = KheloGreenBright, fontWeight = FontWeight.Black, fontSize = 17.sp) }
-                Column(horizontalAlignment = Alignment.End) { Text("PLAYERS", color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold); Text("${tournament.registeredCount}/${tournament.maxParticipants}", color = TextPrimary, fontWeight = FontWeight.Black, fontSize = 17.sp) }
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = when (statusLabel) {
+                    "OPEN" -> Color(0xFFEAF7ED)
+                    "STARTING SOON" -> Color(0xFFFFF3DE)
+                    "LIVE" -> Color(0xFFE8F6FA)
+                    else -> Color(0xFFF8EAEA)
+                },
+                border = borderStroke(1.dp, statusColor),
+                shape = RectangleShape
+            ) {
+                Column(
+                    modifier = Modifier.padding(11.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        if (statusLabel == "LIVE") "MATCH IS LIVE" else "STARTS IN",
+                        color = statusColor,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 12.sp
+                    )
+                    Text(
+                        countdownText,
+                        color = TextPrimary,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 28.sp
+                    )
+                    Text(
+                        tournament.startDate + " • " + tournament.startTime,
+                        color = TextSecondary,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp
+                    )
+                }
             }
-            LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth().height(9.dp), color = KheloGreen, trackColor = DarkBorder)
-            Text("${tournament.registeredCount} players joined • ${(progress * 100).toInt()}% slots filled", color = TextSecondary, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("${tournament.firstPrize.toInt()} / ${tournament.secondPrize.toInt()} / ${tournament.thirdPrize.toInt()} BDT", color = TextSecondary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                Text(if (statusLabel == "OPEN") "JOIN NOW" else statusLabel, color = statusColor, fontWeight = FontWeight.Black, fontSize = 13.sp)
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                TournamentMetric("PRIZE POOL", "৳" + tournament.prizePool.toInt(), EsportsGold, Modifier.weight(1f))
+                TournamentMetric(
+                    "ENTRY FEE",
+                    if (tournament.entryFee == 0.0) "FREE" else "৳" + tournament.entryFee.toInt(),
+                    KheloGreen,
+                    Modifier.weight(1f)
+                )
+                TournamentMetric(
+                    "PER KILL",
+                    if (tournament.perKillReward <= 0.0) "৳0" else "৳" + tournament.perKillReward.toInt(),
+                    EsportsCyan,
+                    Modifier.weight(1f)
+                )
             }
+
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier.fillMaxWidth().height(10.dp),
+                color = statusColor,
+                trackColor = DarkBorder
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    tournament.registeredCount.toString() + "/" +
+                        tournament.maxParticipants + " PLAYERS",
+                    color = TextPrimary,
+                    fontWeight = FontWeight.Black,
+                    fontSize = 12.sp
+                )
+                Text(
+                    (progress * 100).toInt().toString() + "% FILLED",
+                    color = statusColor,
+                    fontWeight = FontWeight.Black,
+                    fontSize = 12.sp
+                )
+            }
+
+            Button(
+                onClick = { if (canJoin) onClick() },
+                enabled = canJoin,
+                shape = RectangleShape,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = statusColor,
+                    disabledContainerColor = statusColor.copy(alpha = 0.45f),
+                    disabledContentColor = Color.White
+                ),
+                modifier = Modifier.fillMaxWidth().height(54.dp)
+            ) {
+                Text(
+                    when {
+                        canJoin -> "JOIN NOW"
+                        statusLabel == "STARTING SOON" -> "STARTING SOON"
+                        statusLabel == "LIVE" -> "LIVE NOW"
+                        statusLabel == "CLOSED" -> "JOIN CLOSED"
+                        statusLabel == "FINISHED" -> "FINISHED"
+                        else -> "CANCELLED"
+                    },
+                    color = Color.White,
+                    fontWeight = FontWeight.Black,
+                    fontSize = 17.sp
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TournamentMetric(
+    label: String,
+    value: String,
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier,
+        color = DarkSurfaceCard,
+        border = borderStroke(1.dp, DarkBorder),
+        shape = RectangleShape
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 9.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(label, color = TextMuted, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+            Text(value, color = color, fontWeight = FontWeight.Black, fontSize = 17.sp)
         }
     }
 }

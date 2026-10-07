@@ -2605,6 +2605,8 @@ fun CreateTournamentDialog(
     var title by remember { mutableStateOf("") }
     var game by remember { mutableStateOf("Free Fire") }
     var gameMode by remember { mutableStateOf("Squad") }
+    var mapName by remember { mutableStateOf("Bermuda") }
+    var perKillReward by remember { mutableStateOf("0") }
     var entryFee by remember { mutableStateOf("50") }
     var prizePool by remember { mutableStateOf("2500") }
     var maxSlots by remember { mutableStateOf("8") }
@@ -2671,7 +2673,7 @@ fun CreateTournamentDialog(
                             selected = game == g,
                             onClick = { game = g },
                             shape = RectangleShape,
-                            label = { Text(g, fontSize = 9.sp, fontWeight = FontWeight.Bold) },
+                            label = { Text(g, fontSize = 11.sp, fontWeight = FontWeight.Bold) },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = KheloGreen,
                                 selectedLabelColor = DarkBg
@@ -2691,7 +2693,7 @@ fun CreateTournamentDialog(
                             selected = gameMode == mode,
                             onClick = { gameMode = mode },
                             shape = RectangleShape,
-                            label = { Text(mode, fontSize = 8.sp, fontWeight = FontWeight.Bold) },
+                            label = { Text(mode, fontSize = 11.sp, fontWeight = FontWeight.Bold) },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = KheloGreen,
                                 selectedLabelColor = DarkBg
@@ -2748,6 +2750,28 @@ fun CreateTournamentDialog(
                             )
                         }
                     }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    OutlinedTextField(
+                        value = mapName,
+                        onValueChange = { mapName = it },
+                        label = { Text("MAP") },
+                        singleLine = true,
+                        shape = RectangleShape,
+                        modifier = Modifier.weight(1f)
+                    )
+                    OutlinedTextField(
+                        value = perKillReward,
+                        onValueChange = { perKillReward = it.filter(Char::isDigit) },
+                        label = { Text("PER KILL (৳)") },
+                        singleLine = true,
+                        shape = RectangleShape,
+                        modifier = Modifier.weight(1f)
+                    )
                 }
 
                 Row(
@@ -2838,6 +2862,8 @@ fun CreateTournamentDialog(
                                 game = game,
                                 gameLogoUrl = logoUrl,
                                 gameMode = gameMode,
+                                mapName = mapName.ifBlank { "Bermuda" },
+                                perKillReward = perKillReward.toDoubleOrNull() ?: 0.0,
                                 startAtMillis = startMillis,
                                 description = "Official Khelo BD competitive championship.",
                                 entryFee = fee,

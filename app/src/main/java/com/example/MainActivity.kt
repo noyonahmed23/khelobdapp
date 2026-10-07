@@ -407,6 +407,9 @@ fun KheloBDApp() {
                                 onRejectChallenge = {
                                     TournamentRepository.rejectUserChallenge(it)
                                 },
+                                onCancelChallenge = {
+                                    TournamentRepository.cancelUserChallenge(it)
+                                },
                                 onSetRoomCredentials = { id, roomId, pass ->
                                     TournamentRepository.setUserChallengeRoom(
                                         id,

@@ -53,6 +53,10 @@ data class Tournament(
     val title: String,
     val game: String,
     val bannerUrl: String = "",
+    val gameLogoUrl: String = "",
+    val gameMode: String = "Squad",
+    val startAtMillis: Long = 0L,
+    val registrationDeadlineAtMillis: Long = 0L,
     val description: String,
     val entryFee: Double = 0.0, // 0 for Free
     val prizePool: Double = 5000.0, // in BDT
@@ -117,6 +121,8 @@ data class Team(
     val captainName: String,
     val members: List<TeamMember> = emptyList(),
     val joinRequests: List<String> = emptyList(),
+    val isLive: Boolean = true,
+    val lastActiveAt: Long = System.currentTimeMillis(),
     val matches: Int = 0,
     val wins: Int = 0,
     val losses: Int = 0,
@@ -130,6 +136,7 @@ data class Team(
 enum class ChallengeStatus {
     PENDING,
     ACCEPTED,
+    ROOM_SET,
     REJECTED,
     CANCELLED,
     SCHEDULED,
@@ -147,6 +154,8 @@ data class TeamChallenge(
     val stakeAmount: Double = 0.0,
     val scheduledTime: String = "Tomorrow, 08:00 PM",
     val status: ChallengeStatus = ChallengeStatus.PENDING,
+    val roomId: String? = null,
+    val roomPassword: String? = null,
     val winnerTeamId: String? = null
 )
 

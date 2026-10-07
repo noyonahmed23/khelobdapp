@@ -21,6 +21,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import coil.compose.AsyncImage
+import java.text.SimpleDateFormat
+import java.util.Locale
 import com.example.data.model.*
 import com.example.ui.components.Avatar
 import com.example.ui.components.MatchStatusBadge
@@ -2596,262 +2598,54 @@ fun AdminAuditLogTab(
 }
 
 @Composable
-fun CreateTournamentDialog(
-    onDismiss: () -> Unit,
-    onCreate: (Tournament) -> Unit
-) {
-    var title by remember {
-        mutableStateOf("")
-    }
-
-    var game by remember {
-        mutableStateOf("Free Fire")
-    }
-
-    var entryFee by remember {
-        mutableStateOf("50")
-    }
-
-    var prizePool by remember {
-        mutableStateOf("2500")
-    }
-
-    var maxSlots by remember {
-        mutableStateOf("8")
-    }
-
-    var numGroups by remember {
-        mutableStateOf("2")
-    }
-
-    Dialog(
-        onDismissRequest = onDismiss
-    ) {
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RectangleShape,
-            color = DarkSurfaceElevated,
-            border = borderStroke(
-                1.dp,
-                DarkBorder
-            )
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    "Create New Esports Tournament",
-                    color = TextPrimary,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp
-                )
-
-                OutlinedTextField(
-                    value = title,
-                    onValueChange = {
-                        title = it
-                    },
-                    label = {
-                        Text("Tournament Title")
-                    },
-                    shape = RectangleShape,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = KheloGreen,
-                        unfocusedBorderColor = DarkBorder,
-                        focusedTextColor = TextPrimary,
-                        unfocusedTextColor = TextPrimary
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag(
-                            "admin_tournament_title_input"
-                        )
-                )
-
-                Text(
-                    "Game:",
-                    color = TextSecondary,
-                    fontSize = 10.sp
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    listOf(
-                        "Free Fire",
-                        "PUBG Mobile",
-                        "eFootball",
-                        "COD Mobile"
-                    ).forEach { g ->
-                        FilterChip(
-                            selected = game == g,
-                            onClick = {
-                                game = g
-                            },
-                            shape = RectangleShape,
-                            label = {
-                                Text(
-                                    g,
-                                    fontSize = 8.sp
-                                )
-                            },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = KheloGreen,
-                                selectedLabelColor = DarkBg
-                            ),
-                            modifier = Modifier.weight(1f)
-                        )
+fun CreateTournamentDialog(onDismiss: () -> Unit, onCreate: (Tournament) -> Unit) {
+    var title by remember { mutableStateOf("") }
+    var game by remember { mutableStateOf("Free Fire") }
+    var gameMode by remember { mutableStateOf("Squad") }
+    var entryFee by remember { mutableStateOf("50") }
+    var prizePool by remember { mutableStateOf("2500") }
+    var maxSlots by remember { mutableStateOf("16") }
+    var numGroups by remember { mutableStateOf("2") }
+    var startDate by remember { mutableStateOf("") }
+    var startTime by remember { mutableStateOf("") }
+    var logoUrl by remember { mutableStateOf("") }
+    var uploading by remember { mutableStateOf(false) }
+    val logoKey = remember { "tournament_" + System.currentTimeMillis() }
+    val pickLogo = rememberImagePicker(StorageManager.getTournamentGameLogoPath(logoKey), { logoUrl = it }, {}, { uploading = it })
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(Modifier.fillMaxWidth(), shape = RectangleShape, color = DarkSurfaceElevated, border = borderStroke(1.dp, KheloGreen)) {
+            Box {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                    Text("CREATE TOURNAMENT", color = TextPrimary, fontWeight = FontWeight.Black, fontSize = 18.sp)
+                    Text("Add game, mode, logo, slots and exact start schedule.", color = TextSecondary, fontSize = 12.sp)
+                    OutlinedTextField(title, { title = it }, label = { Text("Tournament Title") }, singleLine = true, shape = RectangleShape, modifier = Modifier.fillMaxWidth())
+                    Text("GAME", color = TextPrimary, fontWeight = FontWeight.Black, fontSize = 13.sp)
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) { listOf("Free Fire", "PUBG Mobile", "eFootball", "COD Mobile").forEach { g -> FilterChip(selected = game == g, onClick = { game = g }, shape = RectangleShape, label = { Text(g, fontSize = 10.sp, fontWeight = FontWeight.Bold) }, modifier = Modifier.weight(1f)) } }
+                    Text("GAME MODE", color = TextPrimary, fontWeight = FontWeight.Black, fontSize = 13.sp)
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) { listOf("Solo", "Duo", "Squad", "Clash Squad").forEach { m -> FilterChip(selected = gameMode == m, onClick = { gameMode = m }, shape = RectangleShape, label = { Text(m, fontSize = 10.sp, fontWeight = FontWeight.Bold) }, modifier = Modifier.weight(1f)) } }
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Box(Modifier.size(58.dp).background(KheloGreenContainer, RectangleShape), contentAlignment = Alignment.Center) { if (logoUrl.isNotBlank()) AsyncImage(logoUrl, "Game logo", Modifier.fillMaxSize(), contentScale = ContentScale.Crop) else Text("LOGO", color = KheloGreenBright, fontWeight = FontWeight.Black, fontSize = 11.sp) }
+                        Button(onClick = pickLogo, shape = RectangleShape, colors = ButtonDefaults.buttonColors(containerColor = KheloGreen), modifier = Modifier.height(38.dp)) { Icon(Icons.Default.AddAPhoto, null, modifier = Modifier.size(16.dp)); Spacer(Modifier.width(5.dp)); Text("UPLOAD GAME LOGO", fontWeight = FontWeight.Black, fontSize = 11.sp) }
                     }
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) { OutlinedTextField(entryFee, { entryFee = it.filter(Char::isDigit) }, label = { Text("ENTRY ৳") }, singleLine = true, shape = RectangleShape, modifier = Modifier.weight(1f)); OutlinedTextField(prizePool, { prizePool = it.filter(Char::isDigit) }, label = { Text("PRIZE ৳") }, singleLine = true, shape = RectangleShape, modifier = Modifier.weight(1f)) }
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) { OutlinedTextField(maxSlots, { maxSlots = it.filter(Char::isDigit) }, label = { Text("PLAYER SLOTS") }, singleLine = true, shape = RectangleShape, modifier = Modifier.weight(1f)); OutlinedTextField(numGroups, { numGroups = it.filter(Char::isDigit) }, label = { Text("GROUPS") }, singleLine = true, shape = RectangleShape, modifier = Modifier.weight(1f)) }
+                    Text("START SCHEDULE", color = TextPrimary, fontWeight = FontWeight.Black, fontSize = 13.sp)
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) { OutlinedTextField(startDate, { startDate = it }, label = { Text("YYYY-MM-DD") }, singleLine = true, shape = RectangleShape, modifier = Modifier.weight(1f)); OutlinedTextField(startTime, { startTime = it }, label = { Text("HH:MM") }, singleLine = true, shape = RectangleShape, modifier = Modifier.weight(1f)) }
+                    Text("Example: 2026-10-10 and 20:30", color = TextMuted, fontSize = 10.sp)
+                    Button(onClick = {
+                        val fee = entryFee.toDoubleOrNull() ?: 0.0
+                        val prize = prizePool.toDoubleOrNull() ?: 1000.0
+                        val slots = maxSlots.toIntOrNull()?.coerceAtLeast(2) ?: 16
+                        val groups = numGroups.toIntOrNull()?.coerceAtLeast(1) ?: 2
+                        val startMillis = runCatching { SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US).parse(startDate.trim() + " " + startTime.trim())?.time ?: 0L }.getOrDefault(0L)
+                        onCreate(Tournament(title = title.trim(), game = game, gameLogoUrl = logoUrl, gameMode = gameMode, startAtMillis = startMillis, startDate = startDate.ifBlank { "TBD" }, startTime = startTime.ifBlank { "TBD" }, description = "Official Khelo BD competitive championship.", entryFee = fee, prizePool = prize, maxParticipants = slots, numGroups = groups, firstPrize = prize * 0.6, secondPrize = prize * 0.3, thirdPrize = prize * 0.1))
+                    }, enabled = title.isNotBlank() && !uploading, shape = RectangleShape, colors = ButtonDefaults.buttonColors(containerColor = KheloGreen), modifier = Modifier.fillMaxWidth().height(44.dp)) { Text("PUBLISH TOURNAMENT", color = Color.White, fontWeight = FontWeight.Black, fontSize = 13.sp) }
                 }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    OutlinedTextField(
-                        value = entryFee,
-                        onValueChange = {
-                            entryFee = it.filter { ch ->
-                                ch.isDigit()
-                            }
-                        },
-                        label = {
-                            Text("Fee (৳)")
-                        },
-                        shape = RectangleShape,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = KheloGreen,
-                            unfocusedBorderColor = DarkBorder,
-                            focusedTextColor = TextPrimary,
-                            unfocusedTextColor = TextPrimary
-                        ),
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    OutlinedTextField(
-                        value = prizePool,
-                        onValueChange = {
-                            prizePool = it.filter { ch ->
-                                ch.isDigit()
-                            }
-                        },
-                        label = {
-                            Text("Prize (৳)")
-                        },
-                        shape = RectangleShape,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = KheloGreen,
-                            unfocusedBorderColor = DarkBorder,
-                            focusedTextColor = TextPrimary,
-                            unfocusedTextColor = TextPrimary
-                        ),
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    OutlinedTextField(
-                        value = maxSlots,
-                        onValueChange = {
-                            maxSlots = it.filter { ch ->
-                                ch.isDigit()
-                            }
-                        },
-                        label = {
-                            Text("Slots")
-                        },
-                        shape = RectangleShape,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = KheloGreen,
-                            unfocusedBorderColor = DarkBorder,
-                            focusedTextColor = TextPrimary,
-                            unfocusedTextColor = TextPrimary
-                        ),
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    OutlinedTextField(
-                        value = numGroups,
-                        onValueChange = {
-                            numGroups = it.filter { ch ->
-                                ch.isDigit()
-                            }
-                        },
-                        label = {
-                            Text("Groups")
-                        },
-                        shape = RectangleShape,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = KheloGreen,
-                            unfocusedBorderColor = DarkBorder,
-                            focusedTextColor = TextPrimary,
-                            unfocusedTextColor = TextPrimary
-                        ),
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-
-                Button(
-                    onClick = {
-                        val fee =
-                            entryFee.toDoubleOrNull()
-                                ?: 0.0
-
-                        val prize =
-                            prizePool.toDoubleOrNull()
-                                ?: 1000.0
-
-                        val slots =
-                            maxSlots.toIntOrNull()
-                                ?: 8
-
-                        val grp =
-                            numGroups.toIntOrNull()
-                                ?: 2
-
-                        val tour = Tournament(
-                            title = title,
-                            game = game,
-                            description = "Official Khelo BD competitive championship.",
-                            entryFee = fee,
-                            prizePool = prize,
-                            maxParticipants = slots,
-                            numGroups = grp,
-                            firstPrize = prize * 0.6,
-                            secondPrize = prize * 0.3,
-                            thirdPrize = prize * 0.1
-                        )
-
-                        onCreate(tour)
-                    },
-                    enabled = title.isNotBlank(),
-                    shape = RectangleShape,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = KheloGreen
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(38.dp)
-                        .testTag(
-                            "admin_save_tournament_btn"
-                        )
-                ) {
-                    Text(
-                        "Publish Tournament",
-                        color = DarkBg,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+                LoadingOverlay(visible = uploading, message = "Uploading game logo...")
             }
         }
     }
 }
-
 @Composable
 fun AdminSetRoomDialog(
     match: MatchFixture,

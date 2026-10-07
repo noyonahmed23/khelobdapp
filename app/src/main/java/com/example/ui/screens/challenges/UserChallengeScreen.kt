@@ -39,6 +39,7 @@ fun UserChallengeScreen(
     onCancelChallenge: (String) -> Result<Unit> = { Result.success(Unit) },
     onSetRoomCredentials: (String, String, String) -> Result<Unit>,
     onSubmitProof: (String, String) -> Result<Unit>,
+    onReportWrongRoom: (String) -> Result<Unit> = { Result.success(Unit) },
     onOpenDeposit: () -> Unit = {},
     onViewProfile: (UserProfile) -> Unit = {},
     modifier: Modifier = Modifier
@@ -246,7 +247,14 @@ private fun PlayerChallengeCard(
                         Text("আপনার Screenshot জমা হয়েছে। Admin review করবেন।", color = KheloGreen, fontWeight = FontWeight.Black, fontSize = 13.sp)
                     }
                     if (!mine && challenge.roomId != null) {
-                        OutlinedButton(onClick = { }, modifier = Modifier.fillMaxWidth().height(42.dp), shape = RectangleShape, border = borderStroke(1.dp, EsportsRed)) { Text("WRONG ROOM REPORT", color = EsportsRed, fontWeight = FontWeight.Black, fontSize = 12.sp) }
+                        OutlinedButton(
+                            onClick = { onReportWrongRoom(challenge.id) },
+                            modifier = Modifier.fillMaxWidth().height(42.dp),
+                            shape = RectangleShape,
+                            border = borderStroke(1.dp, EsportsRed)
+                        ) {
+                            Text("WRONG ROOM REPORT", color = EsportsRed, fontWeight = FontWeight.Black, fontSize = 12.sp)
+                        }
                     }
                 }
                 OutlinedButton(onClick = onCancel, modifier = Modifier.fillMaxWidth().height(42.dp), shape = RectangleShape, border = borderStroke(1.dp, EsportsRed)) { Text("CANCEL / REFUND", color = EsportsRed, fontWeight = FontWeight.Black, fontSize = 13.sp) }

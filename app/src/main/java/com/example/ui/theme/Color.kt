@@ -2,24 +2,24 @@ package com.example.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Khelo BD Brand Colors (Matching Olive Esports Green & Dark Stadium Arena)
-val KheloGreen = Color(0xFF7FA82E)
-val KheloGreenBright = Color(0xFF98CA37)
-val KheloGreenDark = Color(0xFF56751E)
-val KheloGreenContainer = Color(0xFF223611)
-val OnKheloGreenContainer = Color(0xFFD6F58D)
+// Khelo BD light esports palette
+val KheloGreen = Color(0xFF5E8E18)
+val KheloGreenBright = Color(0xFF4E7A0D)
+val KheloGreenDark = Color(0xFF3E5F0A)
+val KheloGreenContainer = Color(0xFFEAF4D8)
+val OnKheloGreenContainer = Color(0xFF203209)
 
-val EsportsGold = Color(0xFFFFB800)
-val EsportsCyan = Color(0xFF00E5FF)
-val EsportsRed = Color(0xFFFF453A)
-val EsportsOrange = Color(0xFFFF9500)
+val EsportsGold = Color(0xFFB77600)
+val EsportsCyan = Color(0xFF007A8A)
+val EsportsRed = Color(0xFFD32F2F)
+val EsportsOrange = Color(0xFFCC6A00)
 
-val DarkBg = Color(0xFF0D130C)
-val DarkSurface = Color(0xFF131C12)
-val DarkSurfaceElevated = Color(0xFF1B271A)
-val DarkSurfaceCard = Color(0xFF223120)
-val DarkBorder = Color(0xFF2D3F2B)
+val DarkBg = Color(0xFFF6F8F3)
+val DarkSurface = Color(0xFFFFFFFF)
+val DarkSurfaceElevated = Color(0xFFFFFFFF)
+val DarkSurfaceCard = Color(0xFFF0F3EC)
+val DarkBorder = Color(0xFFD4DBCF)
 
-val TextPrimary = Color(0xFFF1F6F0)
-val TextSecondary = Color(0xFFA5B4A3)
-val TextMuted = Color(0xFF6F7E6D)
+val TextPrimary = Color(0xFF172015)
+val TextSecondary = Color(0xFF42503F)
+val TextMuted = Color(0xFF6B7668)

@@ -49,7 +49,8 @@ object FirebaseManager {
         onSettingsUpdate: (SystemSettings) -> Unit,
         onUserChallengesUpdate: (List<UserChallenge>) -> Unit = {},
         onWelcomePopupUpdate: (WelcomePopupConfig) -> Unit = {},
-        onUsersUpdate: (List<UserProfile>) -> Unit = {}
+        onUsersUpdate: (List<UserProfile>) -> Unit = {},
+        onNotificationsUpdate: (List<NotificationItem>) -> Unit = {}
     ) {
         val db = firestore ?: return
 
@@ -124,6 +125,13 @@ object FirebaseManager {
                 }
             }
             activeListeners.add(settingsListener)
+
+            // Notifications Listener
+            val notificationListener = db.collection("notifications").addSnapshotListener { snapshot, error ->
+                if (error != null) return@addSnapshotListener
+                if (snapshot != null) onNotificationsUpdate(snapshot.documents.mapNotNull { parseNotification(it) })
+            }
+            activeListeners.add(notificationListener)
 
             // User Challenges (1v1) Listener
             val userChalListener = db.collection("user_challenges").addSnapshotListener { snapshot, error ->
@@ -218,6 +226,12 @@ object FirebaseManager {
         val regCount = (doc.getLong("registeredCount") ?: 0L).toInt()
         val statusStr = doc.getString("status") ?: "REGISTRATION"
         val status = try { TournamentStatus.valueOf(statusStr) } catch (_: Exception) { TournamentStatus.REGISTRATION }
+        val gameLogoUrl = doc.getString("gameLogoUrl") ?: ""
+        val gameMode = doc.getString("gameMode") ?: "Squad"
+        val mapName = doc.getString("mapName") ?: "Bermuda"
+        val perKillReward = doc.getDouble("perKillReward") ?: 0.0
+        val startAtMillis = doc.getLong("startAtMillis") ?: 0L
+        val registrationDeadlineAtMillis = doc.getLong("registrationDeadlineAtMillis") ?: 0L
         val numGroups = (doc.getLong("numGroups") ?: 2L).toInt()
         val p1 = doc.getDouble("firstPrize") ?: (prizePool * 0.6)
         val p2 = doc.getDouble("secondPrize") ?: (prizePool * 0.3)
@@ -227,8 +241,10 @@ object FirebaseManager {
         val roomPassword = doc.getString("roomPassword").takeIf { it?.isNotBlank() == true }
         val roomVisible = doc.getBoolean("roomVisible") ?: false
         return Tournament(
-            id = id, title = title, game = game, description = desc,
-            entryFee = entryFee, prizePool = prizePool, maxParticipants = maxSlots,
+            id = id, title = title, game = game, gameLogoUrl = gameLogoUrl, gameMode = gameMode,
+            mapName = mapName, perKillReward = perKillReward,
+            startAtMillis = startAtMillis, registrationDeadlineAtMillis = registrationDeadlineAtMillis,
+            description = desc, entryFee = entryFee, prizePool = prizePool, maxParticipants = maxSlots,
             registeredCount = regCount, numGroups = numGroups, status = status,
             firstPrize = p1, secondPrize = p2, thirdPrize = p3, championName = champ,
             roomId = roomId, roomPassword = roomPassword, roomVisible = roomVisible
@@ -330,6 +346,8 @@ object FirebaseManager {
             id = id, name = name, tag = tag, captainId = capId, captainName = capName,
             matches = matches, wins = wins, losses = losses, points = points,
             bannerUrl = bannerUrl, profileImageUrl = profileImageUrl, joinRequests = joinRequests,
+            isLive = doc.getBoolean("isLive") ?: true,
+            lastActiveAt = doc.getLong("lastActiveAt") ?: System.currentTimeMillis(),
             members = members
         )
     }
@@ -344,10 +362,25 @@ object FirebaseManager {
         val stake = doc.getDouble("stakeAmount") ?: 0.0
         val statusStr = doc.getString("status") ?: "PENDING"
         val status = try { ChallengeStatus.valueOf(statusStr) } catch (_: Exception) { ChallengeStatus.PENDING }
+        val roomId = doc.getString("roomId").takeIf { it?.isNotBlank() == true }
+        val roomPassword = doc.getString("roomPassword").takeIf { it?.isNotBlank() == true }
+        val acceptedAtMillis = doc.getLong("acceptedAtMillis") ?: 0L
+        val roomSetAtMillis = doc.getLong("roomSetAtMillis") ?: 0L
+        val proofOpenAtMillis = doc.getLong("proofOpenAtMillis") ?: 0L
+        val deadlineAtMillis = doc.getLong("deadlineAtMillis") ?: 0L
+        val timestamp = doc.getLong("timestamp") ?: System.currentTimeMillis()
+        val challengerProofUrl = doc.getString("challengerProofUrl").takeIf { it?.isNotBlank() == true }
+        val challengedProofUrl = doc.getString("challengedProofUrl").takeIf { it?.isNotBlank() == true }
+        val winnerTeamId = doc.getString("winnerTeamId").takeIf { it?.isNotBlank() == true }
         return TeamChallenge(
             id = id, challengerTeamId = cAId, challengerTeamName = cAName,
             challengedTeamId = cBId, challengedTeamName = cBName,
-            game = game, stakeAmount = stake, status = status
+            game = game, stakeAmount = stake, status = status,
+            timestamp = timestamp,
+            acceptedAtMillis = acceptedAtMillis, roomSetAtMillis = roomSetAtMillis,
+            proofOpenAtMillis = proofOpenAtMillis, deadlineAtMillis = deadlineAtMillis,
+            challengerProofUrl = challengerProofUrl, challengedProofUrl = challengedProofUrl,
+            roomId = roomId, roomPassword = roomPassword, winnerTeamId = winnerTeamId
         )
     }
 
@@ -402,6 +435,10 @@ object FirebaseManager {
         val opponentProofUrl = doc.getString("opponentProofUrl").takeIf { it?.isNotBlank() == true }
         val winnerUid = doc.getString("winnerUid").takeIf { it?.isNotBlank() == true }
         val winnerName = doc.getString("winnerName").takeIf { it?.isNotBlank() == true }
+        val acceptedAtMillis = doc.getLong("acceptedAtMillis") ?: 0L
+        val roomSetAtMillis = doc.getLong("roomSetAtMillis") ?: 0L
+        val proofOpenAtMillis = doc.getLong("proofOpenAtMillis") ?: 0L
+        val deadlineAtMillis = doc.getLong("deadlineAtMillis") ?: 0L
         val timestamp = doc.getLong("timestamp") ?: System.currentTimeMillis()
         return UserChallenge(
             id = id, challengerUid = challengerUid, challengerName = challengerName,
@@ -455,6 +492,10 @@ object FirebaseManager {
                 firestore?.collection("tournaments")?.document(tournament.id)?.set(
                     mapOf(
                         "id" to tournament.id, "title" to tournament.title, "game" to tournament.game,
+                        "gameLogoUrl" to tournament.gameLogoUrl, "gameMode" to tournament.gameMode,
+                        "mapName" to tournament.mapName, "perKillReward" to tournament.perKillReward,
+                        "startAtMillis" to tournament.startAtMillis,
+                        "registrationDeadlineAtMillis" to tournament.registrationDeadlineAtMillis,
                         "description" to tournament.description, "entryFee" to tournament.entryFee,
                         "prizePool" to tournament.prizePool, "maxParticipants" to tournament.maxParticipants,
                         "registeredCount" to tournament.registeredCount, "status" to tournament.status.name,
@@ -530,6 +571,7 @@ object FirebaseManager {
                     mapOf(
                         "id" to team.id, "name" to team.name, "tag" to team.tag,
                         "captainId" to team.captainId, "captainName" to team.captainName,
+                        "isLive" to team.isLive, "lastActiveAt" to team.lastActiveAt,
                         "matches" to team.matches, "wins" to team.wins,
                         "losses" to team.losses, "points" to team.points,
                         "bannerUrl" to team.bannerUrl, "profileImageUrl" to team.profileImageUrl,
@@ -558,7 +600,23 @@ object FirebaseManager {
                         "challengedTeamId" to challenge.challengedTeamId,
                         "challengedTeamName" to challenge.challengedTeamName,
                         "game" to challenge.game, "stakeAmount" to challenge.stakeAmount,
-                        "status" to challenge.status.name
+                        "status" to challenge.status.name,
+                        "timestamp" to challenge.timestamp,
+                        "acceptedAtMillis" to challenge.acceptedAtMillis,
+                        "roomSetAtMillis" to challenge.roomSetAtMillis,
+                        "proofOpenAtMillis" to challenge.proofOpenAtMillis,
+                        "deadlineAtMillis" to challenge.deadlineAtMillis,
+                        "challengerProofUrl" to (challenge.challengerProofUrl ?: ""),
+                        "challengedProofUrl" to (challenge.challengedProofUrl ?: ""),
+                        "roomId" to (challenge.roomId ?: ""),
+                        "roomPassword" to (challenge.roomPassword ?: ""),
+                        "acceptedAtMillis" to challenge.acceptedAtMillis,
+                        "roomSetAtMillis" to challenge.roomSetAtMillis,
+                        "proofOpenAtMillis" to challenge.proofOpenAtMillis,
+                        "deadlineAtMillis" to challenge.deadlineAtMillis,
+                        "challengerProofUrl" to (challenge.challengerProofUrl ?: ""),
+                        "challengedProofUrl" to (challenge.challengedProofUrl ?: ""),
+                        "winnerTeamId" to (challenge.winnerTeamId ?: "")
                     ), SetOptions.merge()
                 )?.await()
             } catch (e: Exception) { Log.w(TAG, "syncChallengeToFirestore error: ${e.message}") }
@@ -609,6 +667,45 @@ object FirebaseManager {
         }
     }
 
+    fun parseNotification(doc: DocumentSnapshot): NotificationItem? {
+        val userId = doc.getString("userId") ?: return null
+        return NotificationItem(
+            id = doc.getString("id") ?: doc.id,
+            userId = userId,
+            title = doc.getString("title") ?: "Notification",
+            message = doc.getString("message") ?: "",
+            type = doc.getString("type") ?: "INFO",
+            isRead = doc.getBoolean("isRead") ?: false,
+            timestamp = doc.getLong("timestamp") ?: System.currentTimeMillis()
+        )
+    }
+
+    fun syncNotificationToFirestore(item: NotificationItem) {
+        scope.launch {
+            try {
+                firestore?.collection("notifications")?.document(item.id)?.set(
+                    mapOf(
+                        "id" to item.id,
+                        "userId" to item.userId,
+                        "title" to item.title,
+                        "message" to item.message,
+                        "type" to item.type,
+                        "isRead" to item.isRead,
+                        "timestamp" to item.timestamp
+                    ), SetOptions.merge()
+                )?.await()
+            } catch (e: Exception) { Log.w(TAG, "syncNotificationToFirestore error") }
+        }
+    }
+
+    fun updateNotificationReadState(notificationId: String, isRead: Boolean) {
+        scope.launch {
+            try {
+                firestore?.collection("notifications")?.document(notificationId)?.update("isRead", isRead)?.await()
+            } catch (e: Exception) { Log.w(TAG, "updateNotificationReadState error") }
+        }
+    }
+
     fun syncUserChallengeToFirestore(challenge: UserChallenge) {
         scope.launch {
             try {
@@ -628,6 +725,10 @@ object FirebaseManager {
                         "opponentProofUrl" to (challenge.opponentProofUrl ?: ""),
                         "winnerUid" to (challenge.winnerUid ?: ""),
                         "winnerName" to (challenge.winnerName ?: ""),
+                        "acceptedAtMillis" to challenge.acceptedAtMillis,
+                        "roomSetAtMillis" to challenge.roomSetAtMillis,
+                        "proofOpenAtMillis" to challenge.proofOpenAtMillis,
+                        "deadlineAtMillis" to challenge.deadlineAtMillis,
                         "timestamp" to challenge.timestamp
                     ), SetOptions.merge()
                 )?.await()

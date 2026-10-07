@@ -121,7 +121,7 @@ fun PublicProfileDialog(
                             Text(
                                 "Game UID: ${user.inGameUid}",
                                 color = TextMuted,
-                                fontSize = 10.sp
+                                fontSize = 11.sp
                             )
                         }
                     }
@@ -132,7 +132,7 @@ fun PublicProfileDialog(
                             Text(
                                 user.preferredGame,
                                 color = KheloGreenBright,
-                                fontSize = 9.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                             )
@@ -142,7 +142,7 @@ fun PublicProfileDialog(
                                 Text(
                                     user.teamName,
                                     color = EsportsCyan,
-                                    fontSize = 9.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                 )
@@ -202,7 +202,7 @@ fun PublicProfileDialog(
 @Composable
 fun PublicStatItem(title: String, value: String, color: androidx.compose.ui.graphics.Color) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(title, color = TextMuted, fontSize = 7.sp, fontWeight = FontWeight.Bold)
+        Text(title, color = TextMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
         Text(value, color = color, fontSize = 13.sp, fontWeight = FontWeight.Black)
     }
 }

@@ -24,6 +24,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.data.model.*
 import com.example.ui.screens.home.HomeTournamentCard
+import com.example.ui.components.BanglaAlertDialog
+import com.example.ui.components.banglaErrorMessage
 import com.example.ui.components.MatchStatusBadge
 import com.example.ui.components.TournamentStatusBadge
 import com.example.ui.components.borderStroke
@@ -37,11 +39,14 @@ fun TournamentsScreen(
     registrations: List<TournamentRegistration>,
     currentUser: UserProfile,
     onRegister: (Tournament, String, String, String) -> Result<String>,
+    onOpenDeposit: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var selectedGame by remember { mutableStateOf("All") }
     var selectedTournament by remember { mutableStateOf<Tournament?>(null) }
     var showRegisterDialog by remember { mutableStateOf(false) }
+    var alertMessage by remember { mutableStateOf<String?>(null) }
+    var alertDeposit by remember { mutableStateOf(false) }
 
     val games = listOf("All", "Free Fire", "PUBG Mobile", "eFootball", "COD Mobile")
 
@@ -148,6 +153,18 @@ fun TournamentsScreen(
             }
         )
     }
+    if (alertMessage != null) {
+        BanglaAlertDialog(
+            title = if (alertDeposit) "ব্যালেন্স প্রয়োজন" else "রেজিস্ট্রেশন বার্তা",
+            message = alertMessage!!,
+            onConfirm = {
+                val go = alertDeposit
+                alertMessage = null
+                alertDeposit = false
+                if (go) onOpenDeposit()
+            }
+        )
+    }
 }
 
 @Composable
@@ -184,7 +201,7 @@ fun TournamentDetailsDialog(
                         Text(
                             text = tournament.game.uppercase(),
                             color = KheloGreenBright,
-                            fontSize = 10.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Black
                         )
                         Text(
@@ -249,7 +266,7 @@ fun TournamentDetailsDialog(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column {
-                            Text("ENTRY FEE", color = TextMuted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                            Text("ENTRY FEE", color = TextMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                             Text(
                                 text = if (tournament.entryFee == 0.0) "FREE" else "৳${tournament.entryFee.toInt()}",
                                 color = if (tournament.entryFee == 0.0) KheloGreenBright else TextPrimary,
@@ -336,7 +353,7 @@ fun TournamentOverviewTab(tournament: Tournament) {
         }
 
         item {
-            Text("PRIZE DISTRIBUTION", color = EsportsGold, fontSize = 10.sp, fontWeight = FontWeight.Black)
+            Text("PRIZE DISTRIBUTION", color = EsportsGold, fontSize = 11.sp, fontWeight = FontWeight.Black)
             Spacer(modifier = Modifier.height(4.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -381,7 +398,7 @@ fun PrizeCard(position: String, amount: String, color: Color, modifier: Modifier
             modifier = Modifier.padding(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(position, color = color, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+            Text(position, color = color, fontSize = 11.sp, fontWeight = FontWeight.Bold)
             Text(amount, color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Black)
         }
     }
@@ -411,7 +428,7 @@ fun TournamentStandingsTab(standings: List<GroupStanding>) {
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(groupName, color = KheloGreenBright, fontWeight = FontWeight.Black, fontSize = 12.sp)
-                            Text("Top advance to Knockouts", color = TextMuted, fontSize = 9.sp)
+                            Text("Top advance to Knockouts", color = TextMuted, fontSize = 11.sp)
                         }
 
                         Spacer(modifier = Modifier.height(6.dp))
@@ -423,13 +440,13 @@ fun TournamentStandingsTab(standings: List<GroupStanding>) {
                                 .padding(horizontal = 6.dp, vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("#", color = TextMuted, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(18.dp))
-                            Text("PLAYER", color = TextMuted, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                            Text("P", color = TextMuted, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(22.dp), textAlign = TextAlign.Center)
-                            Text("W", color = TextMuted, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(22.dp), textAlign = TextAlign.Center)
-                            Text("D", color = TextMuted, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(22.dp), textAlign = TextAlign.Center)
-                            Text("L", color = TextMuted, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(22.dp), textAlign = TextAlign.Center)
-                            Text("PTS", color = EsportsGold, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(26.dp), textAlign = TextAlign.Center)
+                            Text("#", color = TextMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(18.dp))
+                            Text("PLAYER", color = TextMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                            Text("P", color = TextMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(22.dp), textAlign = TextAlign.Center)
+                            Text("W", color = TextMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(22.dp), textAlign = TextAlign.Center)
+                            Text("D", color = TextMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(22.dp), textAlign = TextAlign.Center)
+                            Text("L", color = TextMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(22.dp), textAlign = TextAlign.Center)
+                            Text("PTS", color = EsportsGold, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(26.dp), textAlign = TextAlign.Center)
                         }
 
                         groupMembers.forEachIndexed { index, st ->
@@ -445,7 +462,7 @@ fun TournamentStandingsTab(standings: List<GroupStanding>) {
                                     if (st.isQualified) {
                                         Spacer(modifier = Modifier.width(4.dp))
                                         Surface(color = KheloGreenContainer, shape = RectangleShape) {
-                                            Text("Q", color = KheloGreenBright, fontSize = 8.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(horizontal = 3.dp))
+                                            Text("Q", color = KheloGreenBright, fontSize = 11.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(horizontal = 3.dp))
                                         }
                                     }
                                 }
@@ -485,7 +502,7 @@ fun TournamentKnockoutsTab(matches: List<MatchFixture>) {
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text(match.round.uppercase(), color = if (match.round.contains("Final")) EsportsGold else EsportsCyan, fontSize = 9.sp, fontWeight = FontWeight.Black)
+                            Text(match.round.uppercase(), color = if (match.round.contains("Final")) EsportsGold else EsportsCyan, fontSize = 11.sp, fontWeight = FontWeight.Black)
                             MatchStatusBadge(status = match.status)
                         }
 
@@ -548,11 +565,11 @@ fun TournamentRosterTab(registrations: List<TournamentRegistration>) {
                     ) {
                         Column {
                             Text(reg.userName, color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                            Text("UID: ${reg.gameUid}", color = TextSecondary, fontSize = 10.sp)
+                            Text("UID: ${reg.gameUid}", color = TextSecondary, fontSize = 11.sp)
                         }
                         if (reg.teamName != null) {
                             Surface(color = DarkSurfaceElevated, shape = RectangleShape) {
-                                Text(reg.teamName, color = KheloGreenBright, fontSize = 9.sp, modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp))
+                                Text(reg.teamName, color = KheloGreenBright, fontSize = 11.sp, modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp))
                             }
                         }
                     }
@@ -637,7 +654,7 @@ fun TournamentRegisterDialog(
                                 label = {
                                     Text(
                                         text = if (method == "Wallet") "Wallet (৳${currentUser.walletBalance.toInt()})" else method,
-                                        fontSize = 10.sp,
+                                        fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold
                                     )
                                 },
@@ -661,7 +678,7 @@ fun TournamentRegisterDialog(
                                 Text(
                                     text = "Send ৳${tournament.entryFee.toInt()} to official $selectedMethod number:",
                                     color = TextSecondary,
-                                    fontSize = 10.sp
+                                    fontSize = 11.sp
                                 )
                                 Text(
                                     text = if (selectedMethod == "bKash") "01700123456 (Personal)" else "01900654321 (Personal)",
@@ -700,7 +717,7 @@ fun TournamentRegisterDialog(
                         val res = onConfirmRegistration(gameUid, selectedMethod, trxId)
                         isSubmitting = false
                         if (res.isFailure) {
-                            errorMessage = res.exceptionOrNull()?.message ?: "Registration failed."
+                            errorMessage = banglaErrorMessage(res.exceptionOrNull()?.message ?: "রেজিস্ট্রেশন ব্যর্থ হয়েছে।")
                         }
                     },
                     enabled = !isSubmitting && gameUid.isNotBlank(),

@@ -46,6 +46,12 @@ service firebase.storage {
       allow write: if isImage() && underSize(5);
     }
 
+    // Tournament game logos uploaded by admins.
+    match /tournament_game_logos/{file} {
+      allow read: if true;
+      allow write: if isImage() && underSize(5);
+    }
+
     // 1v1 end-match proof screenshots reviewed by the admin.
     match /challenge_proofs/{file} {
       allow read: if true;

@@ -21,6 +21,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import coil.compose.AsyncImage
+import java.text.SimpleDateFormat
+import java.util.Locale
 import com.example.data.model.*
 import com.example.ui.components.Avatar
 import com.example.ui.components.MatchStatusBadge
@@ -188,7 +190,7 @@ fun AdminDashboardScreen(
                                     Text(
                                         text = "$badgeCount",
                                         color = Color.White,
-                                        fontSize = 8.sp,
+                                        fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
                                         modifier = Modifier.padding(
                                             horizontal = 4.dp,
@@ -410,7 +412,7 @@ fun AdminOverviewTab(
                     Text(
                         "TOTAL PLATFORM VOLUME (VERIFIED)",
                         color = TextMuted,
-                        fontSize = 9.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
                     )
 
@@ -424,7 +426,7 @@ fun AdminOverviewTab(
                     Text(
                         "Includes tournament registration fees & player deposits",
                         color = TextSecondary,
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         modifier = Modifier.padding(top = 2.dp)
                     )
                 }
@@ -488,7 +490,7 @@ fun AdminOverviewTab(
                                 } else {
                                     EsportsRed
                                 },
-                                fontSize = 8.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(
                                     horizontal = 6.dp,
@@ -510,7 +512,7 @@ fun AdminOverviewTab(
                     Text(
                         text = workerStatus.lastSummary,
                         color = TextMuted,
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         modifier = Modifier.padding(top = 2.dp)
                     )
 
@@ -520,7 +522,7 @@ fun AdminOverviewTab(
                         Text(
                             text = cronFeedback!!,
                             color = EsportsGold,
-                            fontSize = 10.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -581,7 +583,7 @@ fun MetricCard(
             Text(
                 title,
                 color = TextMuted,
-                fontSize = 8.sp,
+                fontSize = 11.sp,
                 fontWeight = FontWeight.Bold
             )
 
@@ -657,7 +659,7 @@ fun AdminTournamentsTab(
                         "New Tournament",
                         color = DarkBg,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 10.sp
+                        fontSize = 11.sp
                     )
                 }
             }
@@ -695,7 +697,7 @@ fun AdminTournamentsTab(
                     Text(
                         "Game: ${tour.game} • Reg: ${tour.registeredCount}/${tour.maxParticipants} slots",
                         color = TextSecondary,
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         modifier = Modifier.padding(top = 2.dp)
                     )
 
@@ -720,7 +722,7 @@ fun AdminTournamentsTab(
                             label = {
                                 Text(
                                     "Status",
-                                    fontSize = 9.sp
+                                    fontSize = 11.sp
                                 )
                             },
                             trailingIcon = {
@@ -795,7 +797,7 @@ fun AdminTournamentsTab(
                                 } else {
                                     KheloGreenBright
                                 },
-                                fontSize = 10.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold
                             )
 
@@ -810,7 +812,7 @@ fun AdminTournamentsTab(
                                 } else {
                                     TextMuted
                                 },
-                                fontSize = 9.sp
+                                fontSize = 11.sp
                             )
                         }
 
@@ -844,7 +846,7 @@ fun AdminTournamentsTab(
                             Text(
                                 "Room",
                                 color = TextPrimary,
-                                fontSize = 10.sp
+                                fontSize = 11.sp
                             )
                         }
                     }
@@ -879,7 +881,7 @@ fun AdminTournamentsTab(
                             Text(
                                 "Lock Reg & Auto-Generate Fixtures",
                                 color = KheloGreenBright,
-                                fontSize = 10.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -919,7 +921,7 @@ fun AdminTournamentsTab(
                         Text(
                             "Delete Tournament",
                             color = EsportsRed,
-                            fontSize = 9.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -1058,7 +1060,7 @@ fun AdminTournamentRoomDialog(
                         Text(
                             "Reveal Room ID & Password in-app",
                             color = TextMuted,
-                            fontSize = 9.sp
+                            fontSize = 11.sp
                         )
                     }
 
@@ -1152,14 +1154,14 @@ fun AdminMatchesTab(
                     Text(
                         "${match.tournamentTitle} (${match.groupName ?: match.round})",
                         color = TextSecondary,
-                        fontSize = 10.sp
+                        fontSize = 11.sp
                     )
 
                     if (match.roomId != null) {
                         Text(
                             "Room: ${match.roomId} | Pass: ${match.roomPassword}",
                             color = KheloGreenBright,
-                            fontSize = 10.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(top = 2.dp)
                         )
@@ -1198,7 +1200,7 @@ fun AdminMatchesTab(
                                 "Assign Custom Room ID & Password"
                             },
                             color = TextPrimary,
-                            fontSize = 10.sp
+                            fontSize = 11.sp
                         )
                     }
                 }
@@ -1277,7 +1279,7 @@ fun AdminResultsReviewTab(
                                 Text(
                                     "NEEDS VERIFICATION",
                                     color = EsportsOrange,
-                                    fontSize = 8.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Black,
                                     modifier = Modifier.padding(
                                         horizontal = 4.dp,
@@ -1320,7 +1322,7 @@ fun AdminResultsReviewTab(
                                 "Approve & Advance Standings",
                                 color = DarkBg,
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 10.sp
+                                fontSize = 11.sp
                             )
                         }
                     }
@@ -1399,7 +1401,7 @@ fun AdminPaymentsTab(
                     Text(
                         "TrxID: ${trx.transactionId} • ${trx.note}",
                         color = TextSecondary,
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         modifier = Modifier.padding(top = 2.dp)
                     )
 
@@ -1429,7 +1431,7 @@ fun AdminPaymentsTab(
                                     "Verify & Credit Wallet",
                                     color = DarkBg,
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 9.sp
+                                    fontSize = 11.sp
                                 )
                             }
 
@@ -1453,7 +1455,7 @@ fun AdminPaymentsTab(
                                     "Reject",
                                     color = EsportsRed,
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 9.sp
+                                    fontSize = 11.sp
                                 )
                             }
                         }
@@ -1496,7 +1498,7 @@ fun AdminChallengeProofTab(
             Text(
                 "Winner receives ৳85 (platform fee ৳15 from the ৳100 pool). Review both screenshots before deciding.",
                 color = TextMuted,
-                fontSize = 9.sp,
+                fontSize = 11.sp,
                 modifier = Modifier.padding(top = 2.dp)
             )
         }
@@ -1576,7 +1578,7 @@ fun AdminChallengeProofTab(
                                     } else {
                                         TextSecondary
                                     },
-                                    fontSize = 8.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Black,
                                     modifier = Modifier.padding(
                                         horizontal = 5.dp,
@@ -1589,7 +1591,7 @@ fun AdminChallengeProofTab(
                         Text(
                             "${ch.game} • Pool ৳${(ch.stakeAmount * 2).toInt()} • ${if (ch.roomId != null) "Room ${ch.roomId}/${ch.roomPassword}" else "No room set"}",
                             color = TextSecondary,
-                            fontSize = 10.sp,
+                            fontSize = 11.sp,
                             modifier = Modifier.padding(top = 2.dp)
                         )
 
@@ -1628,7 +1630,7 @@ fun AdminChallengeProofTab(
                             Text(
                                 "Declare Winner:",
                                 color = TextSecondary,
-                                fontSize = 10.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold
                             )
 
@@ -1659,7 +1661,7 @@ fun AdminChallengeProofTab(
                                     Text(
                                         ch.challengerName,
                                         color = DarkBg,
-                                        fontSize = 9.sp,
+                                        fontSize = 11.sp,
                                         fontWeight = FontWeight.Black,
                                         maxLines = 1
                                     )
@@ -1686,7 +1688,7 @@ fun AdminChallengeProofTab(
                                     Text(
                                         ch.opponentName,
                                         color = DarkBg,
-                                        fontSize = 9.sp,
+                                        fontSize = 11.sp,
                                         fontWeight = FontWeight.Black,
                                         maxLines = 1
                                     )
@@ -1717,7 +1719,7 @@ fun AdminChallengeProofTab(
                                 Text(
                                     "Cancel / Void Challenge (refund not automatic)",
                                     color = EsportsRed,
-                                    fontSize = 9.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
@@ -1741,7 +1743,7 @@ private fun ProofColumn(
         Text(
             label,
             color = TextSecondary,
-            fontSize = 9.sp,
+            fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
             maxLines = 1
         )
@@ -1779,7 +1781,7 @@ private fun ProofColumn(
                     Text(
                         "No proof",
                         color = TextMuted,
-                        fontSize = 9.sp
+                        fontSize = 11.sp
                     )
                 }
             }
@@ -1849,7 +1851,7 @@ fun AdminWelcomePopupTab(
                 Text(
                     "Controls the popup every user sees on app open.",
                     color = TextMuted,
-                    fontSize = 9.sp,
+                    fontSize = 11.sp,
                     modifier = Modifier.padding(top = 2.dp)
                 )
             }
@@ -1896,7 +1898,7 @@ fun AdminWelcomePopupTab(
                                     } else {
                                         TextMuted
                                     },
-                                    fontSize = 9.sp
+                                    fontSize = 11.sp
                                 )
                             }
 
@@ -1978,7 +1980,7 @@ fun AdminWelcomePopupTab(
                         Text(
                             "Popup Image (optional)",
                             color = TextSecondary,
-                            fontSize = 10.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
                         )
 
@@ -2003,7 +2005,7 @@ fun AdminWelcomePopupTab(
                                 Text(
                                     "No image selected",
                                     color = TextMuted,
-                                    fontSize = 10.sp
+                                    fontSize = 11.sp
                                 )
                             }
                         }
@@ -2040,7 +2042,7 @@ fun AdminWelcomePopupTab(
                                         "Upload Image"
                                     },
                                     color = KheloGreenBright,
-                                    fontSize = 10.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
@@ -2061,7 +2063,7 @@ fun AdminWelcomePopupTab(
                                     Text(
                                         "Remove",
                                         color = EsportsRed,
-                                        fontSize = 10.sp,
+                                        fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold
                                     )
                                 }
@@ -2105,7 +2107,7 @@ fun AdminWelcomePopupTab(
                             Text(
                                 "Saved! Users will see this on next app open.",
                                 color = KheloGreenBright,
-                                fontSize = 10.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -2150,7 +2152,7 @@ fun AdminManageDbTab(
             Text(
                 "Full CRUD over users, wallets and teams.",
                 color = TextMuted,
-                fontSize = 9.sp,
+                fontSize = 11.sp,
                 modifier = Modifier.padding(top = 2.dp)
             )
         }
@@ -2212,7 +2214,7 @@ fun AdminManageDbTab(
                             } else {
                                 TextSecondary
                             },
-                            fontSize = 9.sp
+                            fontSize = 11.sp
                         )
                     }
 
@@ -2240,7 +2242,7 @@ fun AdminManageDbTab(
                             Text(
                                 "Wallet",
                                 color = KheloGreenBright,
-                                fontSize = 8.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -2270,7 +2272,7 @@ fun AdminManageDbTab(
                                     "Ban"
                                 },
                                 color = EsportsOrange,
-                                fontSize = 8.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -2297,7 +2299,7 @@ fun AdminManageDbTab(
                             Text(
                                 "Delete",
                                 color = EsportsRed,
-                                fontSize = 8.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -2347,7 +2349,7 @@ fun AdminManageDbTab(
                         Text(
                             "${team.members.size} members • Captain: ${team.captainName}",
                             color = TextSecondary,
-                            fontSize = 9.sp
+                            fontSize = 11.sp
                         )
                     }
 
@@ -2373,7 +2375,7 @@ fun AdminManageDbTab(
                         Text(
                             "Delete Team",
                             color = EsportsRed,
-                            fontSize = 9.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -2573,20 +2575,20 @@ fun AdminAuditLogTab(
                             log.action,
                             color = KheloGreenBright,
                             fontWeight = FontWeight.Bold,
-                            fontSize = 10.sp
+                            fontSize = 11.sp
                         )
 
                         Text(
                             log.adminName,
                             color = TextMuted,
-                            fontSize = 9.sp
+                            fontSize = 11.sp
                         )
                     }
 
                     Text(
                         log.details,
                         color = TextSecondary,
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         modifier = Modifier.padding(top = 2.dp)
                     )
                 }
@@ -2600,61 +2602,57 @@ fun CreateTournamentDialog(
     onDismiss: () -> Unit,
     onCreate: (Tournament) -> Unit
 ) {
-    var title by remember {
-        mutableStateOf("")
-    }
+    var title by remember { mutableStateOf("") }
+    var game by remember { mutableStateOf("Free Fire") }
+    var gameMode by remember { mutableStateOf("Squad") }
+    var mapName by remember { mutableStateOf("Bermuda") }
+    var perKillReward by remember { mutableStateOf("0") }
+    var entryFee by remember { mutableStateOf("50") }
+    var prizePool by remember { mutableStateOf("2500") }
+    var maxSlots by remember { mutableStateOf("8") }
+    var numGroups by remember { mutableStateOf("2") }
+    var startDate by remember { mutableStateOf("") }
+    var startTime by remember { mutableStateOf("") }
+    var logoUrl by remember { mutableStateOf("") }
+    var logoError by remember { mutableStateOf<String?>(null) }
+    var uploadingLogo by remember { mutableStateOf(false) }
 
-    var game by remember {
-        mutableStateOf("Free Fire")
-    }
+    val logoKey = remember { "draft_${System.currentTimeMillis()}" }
+    val pickLogo = rememberImagePicker(
+        storagePath = StorageManager.getTournamentGameLogoPath(logoKey),
+        onUploaded = {
+            logoUrl = it
+            logoError = null
+        },
+        onError = { logoError = it },
+        onLoading = { uploadingLogo = it }
+    )
 
-    var entryFee by remember {
-        mutableStateOf("50")
-    }
-
-    var prizePool by remember {
-        mutableStateOf("2500")
-    }
-
-    var maxSlots by remember {
-        mutableStateOf("8")
-    }
-
-    var numGroups by remember {
-        mutableStateOf("2")
-    }
-
-    Dialog(
-        onDismissRequest = onDismiss
-    ) {
+    Dialog(onDismissRequest = onDismiss) {
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RectangleShape,
             color = DarkSurfaceElevated,
-            border = borderStroke(
-                1.dp,
-                DarkBorder
-            )
+            border = borderStroke(1.dp, DarkBorder)
         ) {
             Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(9.dp)
             ) {
                 Text(
-                    "Create New Esports Tournament",
+                    "CREATE NEW ESPORTS TOURNAMENT",
                     color = TextPrimary,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp
+                    fontWeight = FontWeight.Black,
+                    fontSize = 16.sp
                 )
 
                 OutlinedTextField(
                     value = title,
-                    onValueChange = {
-                        title = it
-                    },
-                    label = {
-                        Text("Tournament Title")
-                    },
+                    onValueChange = { title = it },
+                    label = { Text("Tournament Title") },
+                    singleLine = true,
                     shape = RectangleShape,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = KheloGreen,
@@ -2662,41 +2660,40 @@ fun CreateTournamentDialog(
                         focusedTextColor = TextPrimary,
                         unfocusedTextColor = TextPrimary
                     ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag(
-                            "admin_tournament_title_input"
-                        )
+                    modifier = Modifier.fillMaxWidth().testTag("admin_tournament_title_input")
                 )
 
-                Text(
-                    "Game:",
-                    color = TextSecondary,
-                    fontSize = 10.sp
-                )
-
+                Text("GAME", color = TextSecondary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    listOf(
-                        "Free Fire",
-                        "PUBG Mobile",
-                        "eFootball",
-                        "COD Mobile"
-                    ).forEach { g ->
+                    listOf("Free Fire", "PUBG Mobile", "eFootball", "COD Mobile").forEach { g ->
                         FilterChip(
                             selected = game == g,
-                            onClick = {
-                                game = g
-                            },
+                            onClick = { game = g },
                             shape = RectangleShape,
-                            label = {
-                                Text(
-                                    g,
-                                    fontSize = 8.sp
-                                )
-                            },
+                            label = { Text(g, fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = KheloGreen,
+                                selectedLabelColor = DarkBg
+                            ),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+
+                Text("GAME MODE", color = TextSecondary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    listOf("Solo", "Duo", "Squad", "Clash Squad").forEach { mode ->
+                        FilterChip(
+                            selected = gameMode == mode,
+                            onClick = { gameMode = mode },
+                            shape = RectangleShape,
+                            label = { Text(mode, fontSize = 11.sp, fontWeight = FontWeight.Bold) },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = KheloGreen,
                                 selectedLabelColor = DarkBg
@@ -2708,45 +2705,93 @@ fun CreateTournamentDialog(
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(
+                        modifier = Modifier.size(64.dp),
+                        shape = RectangleShape,
+                        color = DarkSurface,
+                        border = borderStroke(1.dp, DarkBorder)
+                    ) {
+                        if (logoUrl.isNotBlank()) {
+                            AsyncImage(
+                                model = logoUrl,
+                                contentDescription = "Tournament game logo",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text("LOGO", color = TextMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Button(
+                            onClick = pickLogo,
+                            enabled = !uploadingLogo,
+                            shape = RectangleShape,
+                            colors = ButtonDefaults.buttonColors(containerColor = KheloGreen)
+                        ) {
+                            Text(
+                                if (uploadingLogo) "Uploading..." else "Upload Game Logo",
+                                color = DarkBg,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        if (logoError != null) {
+                            Text(
+                                logoError!!,
+                                color = EsportsRed,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    OutlinedTextField(
+                        value = mapName,
+                        onValueChange = { mapName = it },
+                        label = { Text("MAP") },
+                        singleLine = true,
+                        shape = RectangleShape,
+                        modifier = Modifier.weight(1f)
+                    )
+                    OutlinedTextField(
+                        value = perKillReward,
+                        onValueChange = { perKillReward = it.filter(Char::isDigit) },
+                        label = { Text("PER KILL (৳)") },
+                        singleLine = true,
+                        shape = RectangleShape,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     OutlinedTextField(
                         value = entryFee,
-                        onValueChange = {
-                            entryFee = it.filter { ch ->
-                                ch.isDigit()
-                            }
-                        },
-                        label = {
-                            Text("Fee (৳)")
-                        },
+                        onValueChange = { entryFee = it.filter(Char::isDigit) },
+                        label = { Text("Entry Fee (৳)") },
+                        singleLine = true,
                         shape = RectangleShape,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = KheloGreen,
-                            unfocusedBorderColor = DarkBorder,
-                            focusedTextColor = TextPrimary,
-                            unfocusedTextColor = TextPrimary
-                        ),
                         modifier = Modifier.weight(1f)
                     )
-
                     OutlinedTextField(
                         value = prizePool,
-                        onValueChange = {
-                            prizePool = it.filter { ch ->
-                                ch.isDigit()
-                            }
-                        },
-                        label = {
-                            Text("Prize (৳)")
-                        },
+                        onValueChange = { prizePool = it.filter(Char::isDigit) },
+                        label = { Text("Prize Pool (৳)") },
+                        singleLine = true,
                         shape = RectangleShape,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = KheloGreen,
-                            unfocusedBorderColor = DarkBorder,
-                            focusedTextColor = TextPrimary,
-                            unfocusedTextColor = TextPrimary
-                        ),
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -2757,95 +2802,91 @@ fun CreateTournamentDialog(
                 ) {
                     OutlinedTextField(
                         value = maxSlots,
-                        onValueChange = {
-                            maxSlots = it.filter { ch ->
-                                ch.isDigit()
-                            }
-                        },
-                        label = {
-                            Text("Slots")
-                        },
+                        onValueChange = { maxSlots = it.filter(Char::isDigit) },
+                        label = { Text("Player Slots") },
+                        singleLine = true,
                         shape = RectangleShape,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = KheloGreen,
-                            unfocusedBorderColor = DarkBorder,
-                            focusedTextColor = TextPrimary,
-                            unfocusedTextColor = TextPrimary
-                        ),
                         modifier = Modifier.weight(1f)
                     )
-
                     OutlinedTextField(
                         value = numGroups,
-                        onValueChange = {
-                            numGroups = it.filter { ch ->
-                                ch.isDigit()
-                            }
-                        },
-                        label = {
-                            Text("Groups")
-                        },
+                        onValueChange = { numGroups = it.filter(Char::isDigit) },
+                        label = { Text("Groups") },
+                        singleLine = true,
                         shape = RectangleShape,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = KheloGreen,
-                            unfocusedBorderColor = DarkBorder,
-                            focusedTextColor = TextPrimary,
-                            unfocusedTextColor = TextPrimary
-                        ),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    OutlinedTextField(
+                        value = startDate,
+                        onValueChange = { startDate = it },
+                        label = { Text("Start Date (YYYY-MM-DD)") },
+                        singleLine = true,
+                        shape = RectangleShape,
+                        modifier = Modifier.weight(1f)
+                    )
+                    OutlinedTextField(
+                        value = startTime,
+                        onValueChange = { startTime = it },
+                        label = { Text("Start Time (HH:MM)") },
+                        singleLine = true,
+                        shape = RectangleShape,
                         modifier = Modifier.weight(1f)
                     )
                 }
 
                 Button(
                     onClick = {
-                        val fee =
-                            entryFee.toDoubleOrNull()
-                                ?: 0.0
+                        val fee = entryFee.toDoubleOrNull() ?: 0.0
+                        val prize = prizePool.toDoubleOrNull() ?: 1000.0
+                        val slots = maxSlots.toIntOrNull() ?: 8
+                        val groups = numGroups.toIntOrNull() ?: 2
+                        val startMillis = if (startDate.isNotBlank() && startTime.isNotBlank()) {
+                            runCatching {
+                                SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US)
+                                    .apply { isLenient = false }
+                                    .parse("$startDate $startTime")?.time ?: 0L
+                            }.getOrDefault(0L)
+                        } else {
+                            0L
+                        }
 
-                        val prize =
-                            prizePool.toDoubleOrNull()
-                                ?: 1000.0
-
-                        val slots =
-                            maxSlots.toIntOrNull()
-                                ?: 8
-
-                        val grp =
-                            numGroups.toIntOrNull()
-                                ?: 2
-
-                        val tour = Tournament(
-                            title = title,
-                            game = game,
-                            description = "Official Khelo BD competitive championship.",
-                            entryFee = fee,
-                            prizePool = prize,
-                            maxParticipants = slots,
-                            numGroups = grp,
-                            firstPrize = prize * 0.6,
-                            secondPrize = prize * 0.3,
-                            thirdPrize = prize * 0.1
+                        onCreate(
+                            Tournament(
+                                title = title.trim(),
+                                game = game,
+                                gameLogoUrl = logoUrl,
+                                gameMode = gameMode,
+                                mapName = mapName.ifBlank { "Bermuda" },
+                                perKillReward = perKillReward.toDoubleOrNull() ?: 0.0,
+                                startAtMillis = startMillis,
+                                description = "Official Khelo BD competitive championship.",
+                                entryFee = fee,
+                                prizePool = prize,
+                                maxParticipants = slots,
+                                numGroups = groups,
+                                startDate = if (startDate.isBlank()) "TBA" else startDate,
+                                startTime = if (startTime.isBlank()) "TBA" else startTime,
+                                firstPrize = prize * 0.6,
+                                secondPrize = prize * 0.3,
+                                thirdPrize = prize * 0.1
+                            )
                         )
-
-                        onCreate(tour)
                     },
-                    enabled = title.isNotBlank(),
+                    enabled = title.isNotBlank() && !uploadingLogo,
                     shape = RectangleShape,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = KheloGreen
-                    ),
+                    colors = ButtonDefaults.buttonColors(containerColor = KheloGreen),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(38.dp)
-                        .testTag(
-                            "admin_save_tournament_btn"
-                        )
+                        .height(42.dp)
+                        .testTag("admin_save_tournament_btn")
                 ) {
-                    Text(
-                        "Publish Tournament",
-                        color = DarkBg,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Text("PUBLISH TOURNAMENT", color = DarkBg, fontWeight = FontWeight.Black, fontSize = 13.sp)
                 }
             }
         }

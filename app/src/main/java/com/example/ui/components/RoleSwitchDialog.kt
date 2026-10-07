@@ -39,7 +39,7 @@ fun RoleSwitchDialog(
                 Text(
                     "Allows testing and reviewing Player App, Admin Panel, and Super Admin features.",
                     color = TextSecondary,
-                    fontSize = 10.sp
+                    fontSize = 11.sp
                 )
 
                 RoleOptionCard(
@@ -112,7 +112,7 @@ fun RoleOptionCard(
             Spacer(modifier = Modifier.width(10.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(title, color = if (isSelected) color else TextPrimary, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                Text(subtitle, color = TextSecondary, fontSize = 9.sp, lineHeight = 13.sp)
+                Text(subtitle, color = TextSecondary, fontSize = 11.sp, lineHeight = 13.sp)
             }
             if (isSelected) {
                 Icon(Icons.Default.CheckCircle, contentDescription = null, tint = color, modifier = Modifier.size(16.dp))

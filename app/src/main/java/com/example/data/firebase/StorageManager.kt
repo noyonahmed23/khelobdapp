@@ -7,6 +7,7 @@ package com.example.data.firebase
 
 import android.net.Uri
 import android.util.Log
+import com.google.firebase.storage.StorageMetadata
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.tasks.await
 
@@ -33,7 +34,8 @@ object StorageManager {
     ): String? {
         val storageRef = storage?.reference?.child(path) ?: return null
         return try {
-            val uploadTask = storageRef.putFile(uri)
+            val metadata = StorageMetadata.Builder().setContentType("image/*").build()
+            val uploadTask = storageRef.putFile(uri, metadata)
             // Optional progress tracking
             onProgress?.let { callback ->
                 uploadTask.addOnProgressListener { snapshot ->
@@ -45,8 +47,8 @@ object StorageManager {
             val downloadUrl = storageRef.downloadUrl.await()
             downloadUrl.toString()
         } catch (e: Exception) {
-            Log.e(TAG, "Image upload failed for path $path", e)
-            null
+            Log.e(TAG, "Image upload failed for path $path: ${e.message}", e)
+            throw e
         }
     }
 
@@ -56,4 +58,5 @@ object StorageManager {
     fun getTeamBannerPath(teamId: String) = "team_banners/$teamId.jpg"
     fun getChallengePicPath(challengeId: String, userId: String) = "challenge_proofs/${challengeId}_${userId}.jpg"
     fun getWelcomePopupPath() = "welcome_popup/banner.jpg"
+    fun getTournamentGameLogoPath(tournamentKey: String) = "tournament_game_logos/$tournamentKey.jpg"
 }

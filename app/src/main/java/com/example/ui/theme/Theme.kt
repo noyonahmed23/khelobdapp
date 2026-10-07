@@ -1,21 +1,17 @@
 package com.example.ui.theme
 
 import android.app.Activity
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
-import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 
-// Strict Sharp Design - Avoid Border Radius across all components
 private val SharpShapes = Shapes(
     extraSmall = androidx.compose.foundation.shape.RoundedCornerShape(0.dp),
     small = androidx.compose.foundation.shape.RoundedCornerShape(0.dp),
@@ -24,43 +20,45 @@ private val SharpShapes = Shapes(
     extraLarge = androidx.compose.foundation.shape.RoundedCornerShape(0.dp)
 )
 
-private val DarkColorScheme = darkColorScheme(
+private val LightColorScheme = lightColorScheme(
     primary = KheloGreen,
-    onPrimary = DarkBg,
+    onPrimary = Color.White,
     primaryContainer = KheloGreenContainer,
     onPrimaryContainer = OnKheloGreenContainer,
     secondary = EsportsGold,
-    onSecondary = DarkBg,
-    secondaryContainer = Color(0xFF3E2E04),
-    onSecondaryContainer = Color(0xFFFFE082),
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFFFFEFC7),
+    onSecondaryContainer = Color(0xFF3A2800),
     tertiary = EsportsCyan,
-    onTertiary = DarkBg,
+    onTertiary = Color.White,
     background = DarkBg,
     onBackground = TextPrimary,
     surface = DarkSurface,
     onSurface = TextPrimary,
-    surfaceVariant = DarkSurfaceElevated,
+    surfaceVariant = DarkSurfaceCard,
     onSurfaceVariant = TextSecondary,
     outline = DarkBorder,
     error = EsportsRed,
-    onError = TextPrimary
+    onError = Color.White
 )
 
 @Composable
 fun MyApplicationTheme(
-    darkTheme: Boolean = true, // Esports platform defaults to immersive dark mode
-    dynamicColor: Boolean = false, // Keep consistent Khelo BD branding
+    darkTheme: Boolean = false,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = DarkColorScheme
+    val colorScheme = LightColorScheme
     val view = LocalView.current
+
     if (!view.isInEditMode) {
         SideEffect {
-            val window = (view.context as? Activity)?.window
-            if (window != null) {
-                window.statusBarColor = DarkBg.toArgb()
-                window.navigationBarColor = DarkBg.toArgb()
-                WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
+            val window = (view.context as? Activity)?.window ?: return@SideEffect
+            window.statusBarColor = DarkSurface.toArgb()
+            window.navigationBarColor = DarkSurface.toArgb()
+            WindowCompat.getInsetsController(window, view).apply {
+                isAppearanceLightStatusBars = true
+                isAppearanceLightNavigationBars = true
             }
         }
     }

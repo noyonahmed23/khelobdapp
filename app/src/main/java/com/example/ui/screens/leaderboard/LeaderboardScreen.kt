@@ -135,18 +135,18 @@ fun PlayerRankCard(rank: Int, player: UserProfile) {
                     Text(
                         text = "${player.preferredGame} • ${player.teamName ?: "Free Agent"}",
                         color = TextSecondary,
-                        fontSize = 9.sp
+                        fontSize = 11.sp
                     )
                 }
             }
 
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                 Column(horizontalAlignment = Alignment.End) {
-                    Text("WINS", color = TextMuted, fontSize = 7.sp, fontWeight = FontWeight.Bold)
+                    Text("WINS", color = TextMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     Text("${player.wins}", color = KheloGreenBright, fontWeight = FontWeight.Bold, fontSize = 11.sp)
                 }
                 Column(horizontalAlignment = Alignment.End) {
-                    Text("PTS", color = TextMuted, fontSize = 7.sp, fontWeight = FontWeight.Bold)
+                    Text("PTS", color = TextMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     Text("${player.points}", color = EsportsGold, fontWeight = FontWeight.Black, fontSize = 13.sp)
                 }
             }
@@ -200,17 +200,17 @@ fun TeamRankCard(rank: Int, team: Team) {
                         fontWeight = FontWeight.Bold,
                         fontSize = 12.sp
                     )
-                    Text("Captain: ${team.captainName}", color = TextSecondary, fontSize = 9.sp)
+                    Text("Captain: ${team.captainName}", color = TextSecondary, fontSize = 11.sp)
                 }
             }
 
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                 Column(horizontalAlignment = Alignment.End) {
-                    Text("WINRATE", color = TextMuted, fontSize = 7.sp, fontWeight = FontWeight.Bold)
+                    Text("WINRATE", color = TextMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     Text("${team.winRate.toInt()}%", color = KheloGreenBright, fontWeight = FontWeight.Bold, fontSize = 11.sp)
                 }
                 Column(horizontalAlignment = Alignment.End) {
-                    Text("PTS", color = TextMuted, fontSize = 7.sp, fontWeight = FontWeight.Bold)
+                    Text("PTS", color = TextMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     Text("${team.points}", color = EsportsGold, fontWeight = FontWeight.Black, fontSize = 13.sp)
                 }
             }

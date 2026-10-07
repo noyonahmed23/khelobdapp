@@ -405,7 +405,7 @@ fun AuthScreen(
             Text(
                 text = "Khelo BD Esports Bangladesh • 100% Secure & Automated",
                 color = TextMuted,
-                fontSize = 10.sp,
+                fontSize = 11.sp,
                 textAlign = TextAlign.Center
             )
         }

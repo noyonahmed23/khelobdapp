@@ -176,7 +176,7 @@ fun MatchDetailedCard(
                         Text(
                             text = match.game.uppercase(),
                             color = KheloGreenBright,
-                            fontSize = 9.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Black,
                             modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
                         )
@@ -185,7 +185,7 @@ fun MatchDetailedCard(
                     Text(
                         text = "${match.tournamentTitle} • ${match.groupName ?: match.round}",
                         color = TextSecondary,
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.widthIn(max = 180.dp)
@@ -211,7 +211,7 @@ fun MatchDetailedCard(
                         overflow = TextOverflow.Ellipsis
                     )
                     if (match.participantAId == currentUser.uid) {
-                        Text("You", color = KheloGreenBright, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                        Text("You", color = KheloGreenBright, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                 }
 
@@ -241,7 +241,7 @@ fun MatchDetailedCard(
                         overflow = TextOverflow.Ellipsis
                     )
                     if (match.participantBId == currentUser.uid) {
-                        Text("You", color = KheloGreenBright, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                        Text("You", color = KheloGreenBright, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -256,14 +256,14 @@ fun MatchDetailedCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.AccessTime, contentDescription = null, tint = TextMuted, modifier = Modifier.size(11.dp))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text(match.scheduledTime, color = TextMuted, fontSize = 10.sp)
+                    Text(match.scheduledTime, color = TextMuted, fontSize = 11.sp)
                 }
 
                 if (match.winnerName != null) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.EmojiEvents, contentDescription = null, tint = EsportsGold, modifier = Modifier.size(11.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Winner: ${match.winnerName}", color = EsportsGold, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        Text("Winner: ${match.winnerName}", color = EsportsGold, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -287,7 +287,7 @@ fun MatchDetailedCard(
                         ) {
                             Icon(Icons.Default.VpnKey, contentDescription = null, tint = KheloGreenBright, modifier = Modifier.size(13.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Room Credentials", color = KheloGreenBright, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                            Text("Room Credentials", color = KheloGreenBright, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         }
                     }
 
@@ -304,7 +304,7 @@ fun MatchDetailedCard(
                         ) {
                             Icon(Icons.Default.UploadFile, contentDescription = null, tint = EsportsGold, modifier = Modifier.size(13.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Submit Result", color = EsportsGold, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                            Text("Submit Result", color = EsportsGold, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -360,7 +360,7 @@ fun PrivateRoomDialog(
                     shape = RectangleShape
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
-                        Text("CUSTOM ROOM ID", color = TextMuted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                        Text("CUSTOM ROOM ID", color = TextMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         Text(
                             text = match.roomId ?: "Pending Generation",
                             color = KheloGreenBright,
@@ -371,7 +371,7 @@ fun PrivateRoomDialog(
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        Text("ROOM PASSWORD", color = TextMuted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                        Text("ROOM PASSWORD", color = TextMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         Text(
                             text = match.roomPassword ?: "Pending Generation",
                             color = EsportsGold,

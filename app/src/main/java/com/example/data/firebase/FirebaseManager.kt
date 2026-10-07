@@ -218,6 +218,10 @@ object FirebaseManager {
         val regCount = (doc.getLong("registeredCount") ?: 0L).toInt()
         val statusStr = doc.getString("status") ?: "REGISTRATION"
         val status = try { TournamentStatus.valueOf(statusStr) } catch (_: Exception) { TournamentStatus.REGISTRATION }
+        val gameLogoUrl = doc.getString("gameLogoUrl") ?: ""
+        val gameMode = doc.getString("gameMode") ?: "Squad"
+        val startAtMillis = doc.getLong("startAtMillis") ?: 0L
+        val registrationDeadlineAtMillis = doc.getLong("registrationDeadlineAtMillis") ?: 0L
         val numGroups = (doc.getLong("numGroups") ?: 2L).toInt()
         val p1 = doc.getDouble("firstPrize") ?: (prizePool * 0.6)
         val p2 = doc.getDouble("secondPrize") ?: (prizePool * 0.3)
@@ -227,8 +231,9 @@ object FirebaseManager {
         val roomPassword = doc.getString("roomPassword").takeIf { it?.isNotBlank() == true }
         val roomVisible = doc.getBoolean("roomVisible") ?: false
         return Tournament(
-            id = id, title = title, game = game, description = desc,
-            entryFee = entryFee, prizePool = prizePool, maxParticipants = maxSlots,
+            id = id, title = title, game = game, gameLogoUrl = gameLogoUrl, gameMode = gameMode,
+            startAtMillis = startAtMillis, registrationDeadlineAtMillis = registrationDeadlineAtMillis,
+            description = desc, entryFee = entryFee, prizePool = prizePool, maxParticipants = maxSlots,
             registeredCount = regCount, numGroups = numGroups, status = status,
             firstPrize = p1, secondPrize = p2, thirdPrize = p3, championName = champ,
             roomId = roomId, roomPassword = roomPassword, roomVisible = roomVisible
@@ -330,6 +335,8 @@ object FirebaseManager {
             id = id, name = name, tag = tag, captainId = capId, captainName = capName,
             matches = matches, wins = wins, losses = losses, points = points,
             bannerUrl = bannerUrl, profileImageUrl = profileImageUrl, joinRequests = joinRequests,
+            isLive = doc.getBoolean("isLive") ?: true,
+            lastActiveAt = doc.getLong("lastActiveAt") ?: System.currentTimeMillis(),
             members = members
         )
     }
@@ -344,10 +351,13 @@ object FirebaseManager {
         val stake = doc.getDouble("stakeAmount") ?: 0.0
         val statusStr = doc.getString("status") ?: "PENDING"
         val status = try { ChallengeStatus.valueOf(statusStr) } catch (_: Exception) { ChallengeStatus.PENDING }
+        val roomId = doc.getString("roomId").takeIf { it?.isNotBlank() == true }
+        val roomPassword = doc.getString("roomPassword").takeIf { it?.isNotBlank() == true }
         return TeamChallenge(
             id = id, challengerTeamId = cAId, challengerTeamName = cAName,
             challengedTeamId = cBId, challengedTeamName = cBName,
-            game = game, stakeAmount = stake, status = status
+            game = game, stakeAmount = stake, status = status,
+            roomId = roomId, roomPassword = roomPassword
         )
     }
 
@@ -455,6 +465,9 @@ object FirebaseManager {
                 firestore?.collection("tournaments")?.document(tournament.id)?.set(
                     mapOf(
                         "id" to tournament.id, "title" to tournament.title, "game" to tournament.game,
+                        "gameLogoUrl" to tournament.gameLogoUrl, "gameMode" to tournament.gameMode,
+                        "startAtMillis" to tournament.startAtMillis,
+                        "registrationDeadlineAtMillis" to tournament.registrationDeadlineAtMillis,
                         "description" to tournament.description, "entryFee" to tournament.entryFee,
                         "prizePool" to tournament.prizePool, "maxParticipants" to tournament.maxParticipants,
                         "registeredCount" to tournament.registeredCount, "status" to tournament.status.name,
@@ -530,6 +543,7 @@ object FirebaseManager {
                     mapOf(
                         "id" to team.id, "name" to team.name, "tag" to team.tag,
                         "captainId" to team.captainId, "captainName" to team.captainName,
+                        "isLive" to team.isLive, "lastActiveAt" to team.lastActiveAt,
                         "matches" to team.matches, "wins" to team.wins,
                         "losses" to team.losses, "points" to team.points,
                         "bannerUrl" to team.bannerUrl, "profileImageUrl" to team.profileImageUrl,
@@ -558,7 +572,9 @@ object FirebaseManager {
                         "challengedTeamId" to challenge.challengedTeamId,
                         "challengedTeamName" to challenge.challengedTeamName,
                         "game" to challenge.game, "stakeAmount" to challenge.stakeAmount,
-                        "status" to challenge.status.name
+                        "status" to challenge.status.name,
+                        "roomId" to (challenge.roomId ?: ""),
+                        "roomPassword" to (challenge.roomPassword ?: "")
                     ), SetOptions.merge()
                 )?.await()
             } catch (e: Exception) { Log.w(TAG, "syncChallengeToFirestore error: ${e.message}") }

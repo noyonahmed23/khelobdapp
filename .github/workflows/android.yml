@@ -13,11 +13,12 @@ branches:
 
 jobs:
 build:
+name: Build Android APKs
 runs-on: ubuntu-latest
 
 ```
 steps:
-  - name: Checkout code
+  - name: Checkout repository
     uses: actions/checkout@v4
 
   - name: Set up JDK 17
@@ -25,36 +26,65 @@ steps:
     with:
       distribution: temurin
       java-version: "17"
+      cache: gradle
 
   - name: Set up Gradle 9.3.1
     uses: gradle/actions/setup-gradle@v4
     with:
       gradle-version: "9.3.1"
 
-  - name: Ensure Gradle default secrets file exists
+  - name: Verify project files
     shell: bash
     run: |
+      echo "Project root:"
+      pwd
+      echo
+      echo "Gradle files:"
+      ls -la
+      echo
+      echo "Workflow:"
+      test -f .github/workflows/android.yml
+      echo "android.yml exists"
+      echo
+      echo "Default secrets file:"
       if [ ! -f local.defaults.properties ]; then
-        printf '%s\n' '# CI fallback secrets file' > local.defaults.properties
+        printf '%s\n' '# Safe CI fallback properties' > local.defaults.properties
+        echo "Created local.defaults.properties"
+      else
+        echo "local.defaults.properties already exists"
       fi
 
   - name: Build User Debug APK
-    run: gradle :app:assembleUserDebug --no-daemon --stacktrace
+    run: |
+      gradle :app:assembleUserDebug \
+        --no-daemon \
+        --stacktrace
 
   - name: Build Admin Debug APK
-    run: gradle :app:assembleAdminDebug --no-daemon --stacktrace
+    run: |
+      gradle :app:assembleAdminDebug \
+        --no-daemon \
+        --stacktrace
 
-  - name: Upload User APK
+  - name: Show generated APKs
+    shell: bash
+    run: |
+      echo "Generated APK files:"
+      find app/build/outputs/apk -type f -name "*.apk" -print
+
+  - name: Upload User Debug APK
     uses: actions/upload-artifact@v4
     with:
       name: khelo-bd-user-debug
       path: app/build/outputs/apk/user/debug/*.apk
       if-no-files-found: error
+      retention-days: 7
 
-  - name: Upload Admin APK
+  - name: Upload Admin Debug APK
     uses: actions/upload-artifact@v4
     with:
       name: khelo-bd-admin-debug
       path: app/build/outputs/apk/admin/debug/*.apk
       if-no-files-found: error
+      retention-days: 7
 ```

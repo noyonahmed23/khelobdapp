@@ -23,6 +23,11 @@ jobs:
     - name: Set up Gradle
       uses: gradle/actions/setup-gradle@v3
 
+    - name: Fix gradlew permissions and line endings
+      run: |
+        chmod +x gradlew
+        sed -i -e 's/\r$//' gradlew
+
     - name: Build Debug APK
       run: ./gradlew assembleDebug
 

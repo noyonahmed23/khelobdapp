@@ -26,24 +26,42 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    // ── Two distinct apps from one codebase ───────────────────────────────
-    // user  → Player app  → com.khelobd.user  → Khelo BD
-    // admin → Admin app   → com.khelobd.admin → Khelo BD Admin
+    // Two apps from the same codebase
     flavorDimensions += "app"
 
     productFlavors {
         create("user") {
             dimension = "app"
             applicationId = "com.khelobd.user"
-            resValue("string", "app_name", "Khelo BD")
-            buildConfigField("boolean", "ADMIN_APP", "false")
+
+            resValue(
+                "string",
+                "app_name",
+                "Khelo BD"
+            )
+
+            buildConfigField(
+                "boolean",
+                "ADMIN_APP",
+                "false"
+            )
         }
 
         create("admin") {
             dimension = "app"
             applicationId = "com.khelobd.admin"
-            resValue("string", "app_name", "Khelo BD Admin")
-            buildConfigField("boolean", "ADMIN_APP", "true")
+
+            resValue(
+                "string",
+                "app_name",
+                "Khelo BD Admin"
+            )
+
+            buildConfigField(
+                "boolean",
+                "ADMIN_APP",
+                "true"
+            )
         }
     }
 
@@ -85,14 +103,18 @@ android {
         }
     }
 
+    // Match the JDK 17 used by GitHub Actions / AGP 9.1
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     buildFeatures {
         compose = true
         buildConfig = true
+
+        // Required because productFlavors use resValue()
+        resValues = true
     }
 
     testOptions {
@@ -109,14 +131,10 @@ android {
 }
 
 /*
- * APK rename
+ * Build both release APKs and copy them with final names.
  *
- * AGP 9.x no longer supports the old applicationVariants API.
- * Therefore we do the rename after the normal APKs are generated.
- *
- * Output:
- *   user  release  -> build_apks/khelobd.apk
- *   admin release  -> build_apks/khelobdadmin.apk
+ * user  -> build_apks/khelobd.apk
+ * admin -> build_apks/khelobdadmin.apk
  */
 tasks.register<Copy>("collectReleaseApks") {
     dependsOn(
@@ -139,7 +157,6 @@ tasks.register<Copy>("collectReleaseApks") {
     )
 }
 
-// Configure the Secrets Gradle Plugin
 secrets {
     propertiesFileName = ".env"
     defaultPropertiesFileName = ".env.example"
@@ -147,7 +164,8 @@ secrets {
 }
 
 googleServices {
-    missingGoogleServicesStrategy = MissingGoogleServicesStrategy.WARN
+    missingGoogleServicesStrategy =
+        MissingGoogleServicesStrategy.WARN
 }
 
 dependencies {
@@ -158,6 +176,7 @@ dependencies {
 
     implementation(libs.androidx.activity.compose)
 
+    // Camera
     // implementation(libs.androidx.camera.camera2)
     // implementation(libs.androidx.camera.core)
     // implementation(libs.androidx.camera.lifecycle)

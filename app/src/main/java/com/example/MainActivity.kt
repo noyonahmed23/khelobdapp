@@ -421,6 +421,9 @@ fun KheloBDApp() {
                                 onSubmitProof = { id, proof ->
                                     TournamentRepository.submitUserChallengeProof(id, proof)
                                 },
+                                onReportWrongRoom = { id ->
+                                    TournamentRepository.reportUserChallengeRoomInvalid(id)
+                                },
                                 onOpenDeposit = {
                                     currentDestination = AppNavDestination.PROFILE
                                     openDepositAfterNavigate = true

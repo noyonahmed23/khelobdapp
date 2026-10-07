@@ -1,0 +1,60 @@
+name: Android CI
+
+on:
+push:
+branches:
+- main
+- master
+
+pull_request:
+branches:
+- main
+- master
+
+jobs:
+build:
+runs-on: ubuntu-latest
+
+```
+steps:
+  - name: Checkout code
+    uses: actions/checkout@v4
+
+  - name: Set up JDK 17
+    uses: actions/setup-java@v4
+    with:
+      distribution: temurin
+      java-version: "17"
+
+  - name: Set up Gradle 9.3.1
+    uses: gradle/actions/setup-gradle@v4
+    with:
+      gradle-version: "9.3.1"
+
+  - name: Ensure Gradle default secrets file exists
+    shell: bash
+    run: |
+      if [ ! -f local.defaults.properties ]; then
+        printf '%s\n' '# CI fallback secrets file' > local.defaults.properties
+      fi
+
+  - name: Build User Debug APK
+    run: gradle :app:assembleUserDebug --no-daemon --stacktrace
+
+  - name: Build Admin Debug APK
+    run: gradle :app:assembleAdminDebug --no-daemon --stacktrace
+
+  - name: Upload User APK
+    uses: actions/upload-artifact@v4
+    with:
+      name: khelo-bd-user-debug
+      path: app/build/outputs/apk/user/debug/*.apk
+      if-no-files-found: error
+
+  - name: Upload Admin APK
+    uses: actions/upload-artifact@v4
+    with:
+      name: khelo-bd-admin-debug
+      path: app/build/outputs/apk/admin/debug/*.apk
+      if-no-files-found: error
+```

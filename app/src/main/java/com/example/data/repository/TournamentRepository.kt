@@ -1048,6 +1048,34 @@ object TournamentRepository {
         return Result.success(Unit)
     }
 
+    fun cancelUserChallenge(challengeId: String): Result<Unit> {
+        val challenge = _userChallenges.value.find { it.id == challengeId }
+            ?: return Result.failure(Exception("Challenge not found."))
+        if (challenge.status != UserChallengeStatus.PENDING &&
+            challenge.status != UserChallengeStatus.ACCEPTED &&
+            challenge.status != UserChallengeStatus.ROOM_SET) {
+            return Result.failure(Exception("This challenge cannot be cancelled now."))
+        }
+        val me = _currentUser.value.uid
+        if (me != challenge.challengerUid && me != challenge.opponentUid) {
+            return Result.failure(Exception("You are not part of this challenge."))
+        }
+
+        // If money was already locked after acceptance, refund both players on cancellation.
+        if (challenge.status == UserChallengeStatus.ACCEPTED || challenge.status == UserChallengeStatus.ROOM_SET) {
+            applyWalletChange(challenge.challengerUid, CHALLENGE_STAKE)
+            applyWalletChange(challenge.opponentUid, CHALLENGE_STAKE)
+        }
+
+        val updated = challenge.copy(status = UserChallengeStatus.CANCELLED)
+        _userChallenges.value = _userChallenges.value.map { if (it.id == challengeId) updated else it }
+        FirebaseManager.syncUserChallengeToFirestore(updated)
+
+        val otherUid = if (me == challenge.challengerUid) challenge.opponentUid else challenge.challengerUid
+        addNotification(otherUid, "1v1 Challenge Cancelled", "The challenge was cancelled and any locked stake was refunded.", "MATCH")
+        return Result.success(Unit)
+    }
+
     /** Opponent rejects the challenge. Nothing is deducted. */
     fun rejectUserChallenge(challengeId: String) {
         val challenge = _userChallenges.value.find { it.id == challengeId } ?: return

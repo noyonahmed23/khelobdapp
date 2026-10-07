@@ -50,7 +50,7 @@ enum class AppNavDestination(
     HOME("Home", Icons.Filled.Home, Icons.Outlined.Home),
     TOURNAMENTS("Tournaments", Icons.Filled.EmojiEvents, Icons.Outlined.EmojiEvents),
     MATCHES("Matches", Icons.Filled.SportsEsports, Icons.Outlined.SportsEsports),
-    CHALLENGES("1v1", Icons.Filled.Swords, Icons.Outlined.Swords),
+    CHALLENGES("1v1", Icons.Filled.SportsEsports, Icons.Outlined.SportsEsports),
     TEAMS("Squads", Icons.Filled.Groups, Icons.Outlined.Groups),
     LEADERBOARD("Rankings", Icons.Filled.Leaderboard, Icons.Outlined.Leaderboard),
     PROFILE("Profile", Icons.Filled.Person, Icons.Outlined.Person)
@@ -99,7 +99,6 @@ fun KheloBDApp() {
     var selectedTournamentFromHome by remember { mutableStateOf<Tournament?>(null) }
     var showRegisterDialogFromHome by remember { mutableStateOf(false) }
 
-    // If not authenticated, display the sharp login/register screen
     if (!isAuthenticated) {
         AuthScreen(
             onLoginSuccess = { user ->
@@ -111,8 +110,13 @@ fun KheloBDApp() {
         return
     }
 
-    // Handle back button when inside modal panels
-    BackHandler(enabled = viewingProfile != null || showSuperAdminScreen || showAdminDashboard || selectedTournamentFromHome != null || currentDestination != AppNavDestination.HOME) {
+    BackHandler(
+        enabled = viewingProfile != null ||
+            showSuperAdminScreen ||
+            showAdminDashboard ||
+            selectedTournamentFromHome != null ||
+            currentDestination != AppNavDestination.HOME
+    ) {
         when {
             viewingProfile != null -> viewingProfile = null
             showSuperAdminScreen -> showSuperAdminScreen = false
@@ -122,7 +126,8 @@ fun KheloBDApp() {
         }
     }
 
-    val unreadNotificationsCount = notifications.count { it.userId == currentUser.uid && !it.isRead }
+    val unreadNotificationsCount =
+        notifications.count { it.userId == currentUser.uid && !it.isRead }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -136,9 +141,21 @@ fun KheloBDApp() {
                         showNotificationsDialog = true
                         TournamentRepository.markNotificationsAsRead()
                     },
-                    onRoleSwitchClick = { if (currentUser.role != UserRole.USER) showRoleSwitchDialog = true },
-                    onAdminClick = { if (currentUser.role != UserRole.USER) showAdminDashboard = true },
-                    onSuperAdminClick = { if (currentUser.role == UserRole.SUPER_ADMIN) showSuperAdminScreen = true },
+                    onRoleSwitchClick = {
+                        if (currentUser.role != UserRole.USER) {
+                            showRoleSwitchDialog = true
+                        }
+                    },
+                    onAdminClick = {
+                        if (currentUser.role != UserRole.USER) {
+                            showAdminDashboard = true
+                        }
+                    },
+                    onSuperAdminClick = {
+                        if (currentUser.role == UserRole.SUPER_ADMIN) {
+                            showSuperAdminScreen = true
+                        }
+                    },
                     onLogoutClick = { TournamentRepository.logout() },
                     showAdminControls = BuildConfig.ADMIN_APP
                 )
@@ -153,12 +170,17 @@ fun KheloBDApp() {
                 ) {
                     AppNavDestination.entries.forEach { destination ->
                         val isSelected = currentDestination == destination
+
                         NavigationBarItem(
                             selected = isSelected,
                             onClick = { currentDestination = destination },
                             icon = {
                                 Icon(
-                                    imageVector = if (isSelected) destination.selectedIcon else destination.unselectedIcon,
+                                    imageVector = if (isSelected) {
+                                        destination.selectedIcon
+                                    } else {
+                                        destination.unselectedIcon
+                                    },
                                     contentDescription = destination.title,
                                     tint = if (isSelected) KheloGreenBright else TextMuted
                                 )
@@ -167,20 +189,31 @@ fun KheloBDApp() {
                                 Text(
                                     text = destination.title,
                                     fontSize = 9.sp,
-                                    fontWeight = if (isSelected) FontWeight.Black else FontWeight.Bold,
-                                    color = if (isSelected) KheloGreenBright else TextMuted
+                                    fontWeight = if (isSelected) {
+                                        FontWeight.Black
+                                    } else {
+                                        FontWeight.Bold
+                                    },
+                                    color = if (isSelected) {
+                                        KheloGreenBright
+                                    } else {
+                                        TextMuted
+                                    }
                                 )
                             },
                             colors = NavigationBarItemDefaults.colors(
                                 indicatorColor = KheloGreenContainer
                             ),
-                            modifier = Modifier.testTag("nav_item_${destination.name.lowercase()}")
+                            modifier = Modifier.testTag(
+                                "nav_item_${destination.name.lowercase()}"
+                            )
                         )
                     }
                 }
             }
         }
     ) { innerPadding ->
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -193,8 +226,12 @@ fun KheloBDApp() {
                         allUsers = allUsers,
                         settings = settings,
                         onClose = { showSuperAdminScreen = false },
-                        onUpdateSettings = { TournamentRepository.updateSystemSettings(it) },
-                        onSetUserRole = { uid, role -> TournamentRepository.setUserRole(uid, role) }
+                        onUpdateSettings = {
+                            TournamentRepository.updateSystemSettings(it)
+                        },
+                        onSetUserRole = { uid, role ->
+                            TournamentRepository.setUserRole(uid, role)
+                        }
                     )
                 }
 
@@ -210,23 +247,84 @@ fun KheloBDApp() {
                         welcomePopup = welcomePopup,
                         workerStatus = workerStatus,
                         onClose = { showAdminDashboard = false },
-                        onCreateTournament = { TournamentRepository.createTournament(it) },
-                        onAutoGenerateFixtures = { TournamentRepository.automateGenerateGroupsAndFixtures(it) },
-                        onSetRoomCredentials = { matchId, roomId, pass -> TournamentRepository.setRoomCredentials(matchId, roomId, pass) },
-                        onVerifyResult = { matchId, winnerId -> TournamentRepository.verifyMatchResult(matchId, winnerId) },
-                        onApprovePayment = { TournamentRepository.approvePayment(it) },
-                        onRejectPayment = { id, reason -> TournamentRepository.rejectPayment(id, reason) },
-                        onTriggerCron = { TournamentRepository.triggerWorkerNow() },
-                        onUpdateTournamentStatus = { id, status -> TournamentRepository.updateTournamentStatus(id, status) },
-                        onSetTournamentRoom = { id, roomId, pass, visible -> TournamentRepository.setTournamentRoom(id, roomId, pass, visible) },
-                        onDeleteTournament = { TournamentRepository.deleteTournament(it) },
-                        onDeclareChallengeWinner = { id, winnerUid -> TournamentRepository.declareUserChallengeWinner(id, winnerUid) },
-                        onDeleteUserChallenge = { TournamentRepository.deleteUserChallenge(it) },
-                        onUpdateWelcomePopup = { TournamentRepository.updateWelcomePopup(it) },
-                        onAdjustUserWallet = { uid, delta -> TournamentRepository.adjustUserWallet(uid, delta) },
-                        onSetUserBanned = { uid, banned -> TournamentRepository.setUserBanned(uid, banned) },
-                        onDeleteUser = { TournamentRepository.deleteUser(it) },
-                        onDeleteTeam = { TournamentRepository.deleteTeam(it) }
+                        onCreateTournament = {
+                            TournamentRepository.createTournament(it)
+                        },
+                        onAutoGenerateFixtures = {
+                            TournamentRepository.automateGenerateGroupsAndFixtures(it)
+                        },
+                        onSetRoomCredentials = { matchId, roomId, pass ->
+                            TournamentRepository.setRoomCredentials(
+                                matchId,
+                                roomId,
+                                pass
+                            )
+                        },
+                        onVerifyResult = { matchId, winnerId ->
+                            TournamentRepository.verifyMatchResult(
+                                matchId,
+                                winnerId
+                            )
+                        },
+                        onApprovePayment = {
+                            TournamentRepository.approvePayment(it)
+                        },
+                        onRejectPayment = { id, reason ->
+                            TournamentRepository.rejectPayment(
+                                id,
+                                reason
+                            )
+                        },
+                        onTriggerCron = {
+                            TournamentRepository.triggerWorkerNow()
+                        },
+                        onUpdateTournamentStatus = { id, status ->
+                            TournamentRepository.updateTournamentStatus(
+                                id,
+                                status
+                            )
+                        },
+                        onSetTournamentRoom = { id, roomId, pass, visible ->
+                            TournamentRepository.setTournamentRoom(
+                                id,
+                                roomId,
+                                pass,
+                                visible
+                            )
+                        },
+                        onDeleteTournament = {
+                            TournamentRepository.deleteTournament(it)
+                        },
+                        onDeclareChallengeWinner = { id, winnerUid ->
+                            TournamentRepository.declareUserChallengeWinner(
+                                id,
+                                winnerUid
+                            )
+                        },
+                        onDeleteUserChallenge = {
+                            TournamentRepository.deleteUserChallenge(it)
+                        },
+                        onUpdateWelcomePopup = {
+                            TournamentRepository.updateWelcomePopup(it)
+                        },
+                        onAdjustUserWallet = { uid, delta ->
+                            TournamentRepository.adjustUserWallet(
+                                uid,
+                                delta
+                            )
+                        },
+                        onSetUserBanned = { uid, banned ->
+                            TournamentRepository.setUserBanned(
+                                uid,
+                                banned
+                            )
+                        },
+                        onDeleteUser = {
+                            TournamentRepository.deleteUser(it)
+                        },
+                        onDeleteTeam = {
+                            TournamentRepository.deleteTeam(it)
+                        }
                     )
                 }
 
@@ -237,13 +335,27 @@ fun KheloBDApp() {
                                 currentUser = currentUser,
                                 tournaments = tournaments,
                                 matches = matches,
-                                onSelectTournament = { selectedTournamentFromHome = it },
-                                onNavigateTournaments = { currentDestination = AppNavDestination.TOURNAMENTS },
-                                onNavigateMatches = { currentDestination = AppNavDestination.MATCHES },
-                                onNavigateTeams = { currentDestination = AppNavDestination.TEAMS },
-                                onNavigateLeaderboard = { currentDestination = AppNavDestination.LEADERBOARD },
-                                onNavigateProfile = { currentDestination = AppNavDestination.PROFILE },
-                                onMatchClick = { currentDestination = AppNavDestination.MATCHES }
+                                onSelectTournament = {
+                                    selectedTournamentFromHome = it
+                                },
+                                onNavigateTournaments = {
+                                    currentDestination = AppNavDestination.TOURNAMENTS
+                                },
+                                onNavigateMatches = {
+                                    currentDestination = AppNavDestination.MATCHES
+                                },
+                                onNavigateTeams = {
+                                    currentDestination = AppNavDestination.TEAMS
+                                },
+                                onNavigateLeaderboard = {
+                                    currentDestination = AppNavDestination.LEADERBOARD
+                                },
+                                onNavigateProfile = {
+                                    currentDestination = AppNavDestination.PROFILE
+                                },
+                                onMatchClick = {
+                                    currentDestination = AppNavDestination.MATCHES
+                                }
                             )
                         }
 
@@ -255,7 +367,12 @@ fun KheloBDApp() {
                                 registrations = registrations,
                                 currentUser = currentUser,
                                 onRegister = { tour, gameUid, method, trxId ->
-                                    TournamentRepository.registerForTournament(tour, gameUid, method, trxId)
+                                    TournamentRepository.registerForTournament(
+                                        tour,
+                                        gameUid,
+                                        method,
+                                        trxId
+                                    )
                                 }
                             )
                         }
@@ -265,7 +382,13 @@ fun KheloBDApp() {
                                 matches = matches,
                                 currentUser = currentUser,
                                 onSubmitScore = { matchId, sA, sB, winId, proof ->
-                                    TournamentRepository.submitMatchScore(matchId, sA, sB, winId, proof)
+                                    TournamentRepository.submitMatchScore(
+                                        matchId,
+                                        sA,
+                                        sB,
+                                        winId,
+                                        proof
+                                    )
                                 }
                             )
                         }
@@ -275,12 +398,31 @@ fun KheloBDApp() {
                                 currentUser = currentUser,
                                 allUsers = allUsers,
                                 userChallenges = userChallenges,
-                                onSendChallenge = { uid, name -> TournamentRepository.sendUserChallenge(uid, name) },
-                                onAcceptChallenge = { TournamentRepository.acceptUserChallenge(it) },
-                                onRejectChallenge = { TournamentRepository.rejectUserChallenge(it) },
-                                onSetRoomCredentials = { id, roomId, pass -> TournamentRepository.setUserChallengeRoom(id, roomId, pass) },
-                                onSubmitProof = { id, proof -> TournamentRepository.submitUserChallengeProof(id, proof) },
-                                onViewProfile = { user -> viewingProfile = user }
+                                onSendChallenge = { uid, name ->
+                                    TournamentRepository.sendUserChallenge(uid, name)
+                                },
+                                onAcceptChallenge = {
+                                    TournamentRepository.acceptUserChallenge(it)
+                                },
+                                onRejectChallenge = {
+                                    TournamentRepository.rejectUserChallenge(it)
+                                },
+                                onSetRoomCredentials = { id, roomId, pass ->
+                                    TournamentRepository.setUserChallengeRoom(
+                                        id,
+                                        roomId,
+                                        pass
+                                    )
+                                },
+                                onSubmitProof = { id, proof ->
+                                    TournamentRepository.submitUserChallengeProof(
+                                        id,
+                                        proof
+                                    )
+                                },
+                                onViewProfile = {
+                                    user -> viewingProfile = user
+                                }
                             )
                         }
 
@@ -290,12 +432,52 @@ fun KheloBDApp() {
                                 challenges = challenges,
                                 currentUser = currentUser,
                                 allUsers = allUsers,
-                                onCreateTeam = { name, tag, profileImageUrl, bannerUrl -> TournamentRepository.createTeam(name, tag, profileImageUrl, bannerUrl) },
-                                onChallengeTeam = { targetId, game, stake -> TournamentRepository.challengeTeam(targetId, game, stake) },
-                                onAcceptChallenge = { TournamentRepository.acceptChallenge(it) },
-                                onSendJoinRequest = { TournamentRepository.sendJoinRequest(it) },
-                                onRespondJoinRequest = { teamId, userId, accept -> TournamentRepository.respondJoinRequest(teamId, userId, accept) },
-                                onRemoveMember = { teamId, userId -> TournamentRepository.removeTeamMember(teamId, userId) }
+                                onCreateTeam = {
+                                    name,
+                                    tag,
+                                    profileImageUrl,
+                                    bannerUrl
+                                    ->
+                                    TournamentRepository.createTeam(
+                                        name,
+                                        tag,
+                                        profileImageUrl,
+                                        bannerUrl
+                                    )
+                                },
+                                onChallengeTeam = { targetId, game, stake ->
+                                    TournamentRepository.challengeTeam(
+                                        targetId,
+                                        game,
+                                        stake
+                                    )
+                                },
+                                onAcceptChallenge = {
+                                    TournamentRepository.acceptChallenge(it)
+                                },
+                                onSendJoinRequest = {
+                                    TournamentRepository.sendJoinRequest(it)
+                                },
+                                onRespondJoinRequest = {
+                                    teamId,
+                                    userId,
+                                    accept
+                                    ->
+                                    TournamentRepository.respondJoinRequest(
+                                        teamId,
+                                        userId,
+                                        accept
+                                    )
+                                },
+                                onRemoveMember = {
+                                    teamId,
+                                    userId
+                                    ->
+                                    TournamentRepository.removeTeamMember(
+                                        teamId,
+                                        userId
+                                    )
+                                }
                             )
                         }
 
@@ -312,11 +494,45 @@ fun KheloBDApp() {
                                 payments = payments,
                                 settings = settings,
                                 allUsersRanking = allUsers,
-                                onUpdateProfile = { name, gameUid, game -> TournamentRepository.updateProfile(name, gameUid, game) },
-                                onProfileImagePicked = { url -> TournamentRepository.updateProfileImages(url, null) },
-                                onBannerImagePicked = { url -> TournamentRepository.updateProfileImages(null, url) },
-                                onRequestDeposit = { amt, method, senderNumber, trxId -> TournamentRepository.requestDeposit(amt, method, senderNumber, trxId) },
-                                onLogout = { TournamentRepository.logout() }
+                                onUpdateProfile = {
+                                    name,
+                                    gameUid,
+                                    game
+                                    ->
+                                    TournamentRepository.updateProfile(
+                                        name,
+                                        gameUid,
+                                        game
+                                    )
+                                },
+                                onProfileImagePicked = { url ->
+                                    TournamentRepository.updateProfileImages(
+                                        url,
+                                        null
+                                    )
+                                },
+                                onBannerImagePicked = { url ->
+                                    TournamentRepository.updateProfileImages(
+                                        null,
+                                        url
+                                    )
+                                },
+                                onRequestDeposit = {
+                                    amt,
+                                    method,
+                                    senderNumber,
+                                    trxId
+                                    ->
+                                    TournamentRepository.requestDeposit(
+                                        amt,
+                                        method,
+                                        senderNumber,
+                                        trxId
+                                    )
+                                },
+                                onLogout = {
+                                    TournamentRepository.logout()
+                                }
                             )
                         }
                     }
@@ -327,24 +543,34 @@ fun KheloBDApp() {
         }
     }
 
-    // Global welcome popup — fully controlled from the Admin panel
-    if (welcomePopup.isVisible && !dismissedWelcomePopup && !showAdminDashboard && !showSuperAdminScreen) {
+    if (
+        welcomePopup.isVisible &&
+        !dismissedWelcomePopup &&
+        !showAdminDashboard &&
+        !showSuperAdminScreen
+    ) {
         WelcomePopupDialog(
             config = welcomePopup,
-            onDismiss = { dismissedWelcomePopup = true }
+            onDismiss = {
+                dismissedWelcomePopup = true
+            }
         )
     }
 
-    // Public profile viewer (tap any player to see their stats)
     viewingProfile?.let { profile ->
         PublicProfileDialog(
             user = profile,
             currentUserUid = currentUser.uid,
             allUsersRanking = allUsers,
-            onDismiss = { viewingProfile = null },
+            onDismiss = {
+                viewingProfile = null
+            },
             onChallengeClick = { opponentUid, opponentName ->
                 viewingProfile = null
-                TournamentRepository.sendUserChallenge(opponentUid, opponentName)
+                TournamentRepository.sendUserChallenge(
+                    opponentUid,
+                    opponentName
+                )
                 currentDestination = AppNavDestination.CHALLENGES
             }
         )
@@ -353,26 +579,52 @@ fun KheloBDApp() {
     selectedTournamentFromHome?.let { tour ->
         TournamentDetailsDialog(
             tournament = tour,
-            standings = standings.filter { it.tournamentId == tour.id },
-            matches = matches.filter { it.tournamentId == tour.id },
-            registrations = registrations.filter { it.tournamentId == tour.id },
-            isAlreadyRegistered = registrations.any { it.tournamentId == tour.id && it.userId == currentUser.uid },
-            onDismiss = { selectedTournamentFromHome = null },
-            onJoinClick = { showRegisterDialogFromHome = true }
+            standings = standings.filter {
+                it.tournamentId == tour.id
+            },
+            matches = matches.filter {
+                it.tournamentId == tour.id
+            },
+            registrations = registrations.filter {
+                it.tournamentId == tour.id
+            },
+            isAlreadyRegistered = registrations.any {
+                it.tournamentId == tour.id &&
+                    it.userId == currentUser.uid
+            },
+            onDismiss = {
+                selectedTournamentFromHome = null
+            },
+            onJoinClick = {
+                showRegisterDialogFromHome = true
+            }
         )
     }
 
-    if (showRegisterDialogFromHome && selectedTournamentFromHome != null) {
+    if (
+        showRegisterDialogFromHome &&
+        selectedTournamentFromHome != null
+    ) {
         TournamentRegisterDialog(
             tournament = selectedTournamentFromHome!!,
             currentUser = currentUser,
-            onDismiss = { showRegisterDialogFromHome = false },
+            onDismiss = {
+                showRegisterDialogFromHome = false
+            },
             onConfirmRegistration = { gameUid, method, trxId ->
-                val result = TournamentRepository.registerForTournament(selectedTournamentFromHome!!, gameUid, method, trxId)
+                val result =
+                    TournamentRepository.registerForTournament(
+                        selectedTournamentFromHome!!,
+                        gameUid,
+                        method,
+                        trxId
+                    )
+
                 if (result.isSuccess) {
                     showRegisterDialogFromHome = false
                     selectedTournamentFromHome = null
                 }
+
                 result
             }
         )
@@ -380,17 +632,24 @@ fun KheloBDApp() {
 
     if (showNotificationsDialog) {
         NotificationsDialog(
-            notifications = notifications.filter { it.userId == currentUser.uid },
-            onDismiss = { showNotificationsDialog = false }
+            notifications = notifications.filter {
+                it.userId == currentUser.uid
+            },
+            onDismiss = {
+                showNotificationsDialog = false
+            }
         )
     }
 
     if (showRoleSwitchDialog) {
         RoleSwitchDialog(
             currentRole = currentUser.role,
-            onDismiss = { showRoleSwitchDialog = false },
+            onDismiss = {
+                showRoleSwitchDialog = false
+            },
             onSelectRole = { role ->
                 TournamentRepository.switchUserRole(role)
+
                 if (role == UserRole.ADMIN) {
                     showAdminDashboard = true
                 } else if (role == UserRole.SUPER_ADMIN) {

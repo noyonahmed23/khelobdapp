@@ -642,6 +642,12 @@ fun UserChallengeCard(
                         ) {
                             Text("Set Room Credentials", color = DarkBg, fontWeight = FontWeight.Black, fontSize = 12.sp)
                         }
+                        OutlinedButton(
+                            onClick = onCancel,
+                            shape = RectangleShape,
+                            border = borderStroke(1.dp, EsportsRed),
+                            modifier = Modifier.fillMaxWidth().height(38.dp)
+                        ) { Text("CANCEL CHALLENGE", color = EsportsRed, fontWeight = FontWeight.Black, fontSize = 12.sp) }
                     } else {
                         InfoRow(
                             icon = Icons.Default.HourglassEmpty,

@@ -36,163 +36,70 @@ fun TeamsScreen(
     onCreateTeam: (name: String, tag: String, profileImageUrl: String, bannerUrl: String) -> Unit,
     onChallengeTeam: (targetTeamId: String, game: String, stake: Double) -> Unit,
     onAcceptChallenge: (challengeId: String) -> Unit,
+    onSetChallengeRoom: (challengeId: String, roomId: String, password: String) -> Unit = { _, _, _ -> },
+    onCancelChallenge: (challengeId: String) -> Unit = {},
     onSendJoinRequest: (teamId: String) -> Unit = {},
     onRespondJoinRequest: (teamId: String, userId: String, accept: Boolean) -> Unit = { _, _, _ -> },
     onRemoveMember: (teamId: String, userId: String) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier
 ) {
+    var selectedSection by remember { mutableStateOf(0) }
     var showCreateTeamDialog by remember { mutableStateOf(false) }
     var showChallengeDialog by remember { mutableStateOf(false) }
+    var selectedOpponentId by remember { mutableStateOf<String?>(null) }
     var teamMessage by remember { mutableStateOf<String?>(null) }
-
     val myTeam = teams.find { it.id == currentUser.teamId }
     val userById = allUsers.associateBy { it.uid }
+    val liveOpponentTeams = teams.filter { it.id != currentUser.teamId && it.isLive }
 
-    LazyColumn(
-        modifier = modifier
-            .fillMaxSize()
-            .background(DarkBg)
-            .padding(14.dp),
-        contentPadding = PaddingValues(bottom = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
-    ) {
+    LazyColumn(modifier.fillMaxSize().background(DarkBg).padding(14.dp), contentPadding = PaddingValues(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         item {
-            Text("MY SQUAD", color = TextPrimary, fontWeight = FontWeight.Black, fontSize = 12.sp, letterSpacing = 0.5.sp)
+            Text("SQUADS", color = TextPrimary, fontWeight = FontWeight.Black, fontSize = 20.sp)
+            Text("Manage your squad or browse live opponent squads.", color = TextSecondary, fontSize = 13.sp)
         }
-
-        if (myTeam != null) {
-            item {
-                MyTeamCard(
-                    team = myTeam,
-                    currentUser = currentUser,
-                    userById = userById,
-                    onChallengeClick = { showChallengeDialog = true },
-                    onRespondJoinRequest = { userId, accept -> onRespondJoinRequest(myTeam.id, userId, accept) },
-                    onRemoveMember = { userId -> onRemoveMember(myTeam.id, userId) }
-                )
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = { selectedSection = 0 }, shape = RectangleShape, colors = ButtonDefaults.buttonColors(containerColor = if (selectedSection == 0) KheloGreen else DarkSurfaceCard), modifier = Modifier.weight(1f).height(44.dp)) { Text("MY TEAM", color = if (selectedSection == 0) Color.White else TextPrimary, fontWeight = FontWeight.Black, fontSize = 13.sp) }
+                Button(onClick = { selectedSection = 1 }, shape = RectangleShape, colors = ButtonDefaults.buttonColors(containerColor = if (selectedSection == 1) KheloGreen else DarkSurfaceCard), modifier = Modifier.weight(1f).height(44.dp)) { Text("BROWSE TEAM", color = if (selectedSection == 1) Color.White else TextPrimary, fontWeight = FontWeight.Black, fontSize = 13.sp) }
             }
-        } else {
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RectangleShape,
-                    colors = CardDefaults.cardColors(containerColor = DarkSurfaceElevated),
-                    border = borderStroke(1.dp, DarkBorder)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(Icons.Default.Groups, contentDescription = null, tint = TextMuted, modifier = Modifier.size(32.dp))
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text("You don't have a team yet", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                        Text("Create a squad, invite friends, and challenge rivals", color = TextSecondary, fontSize = 11.sp)
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Button(
-                            onClick = { showCreateTeamDialog = true },
-                            shape = RectangleShape,
-                            colors = ButtonDefaults.buttonColors(containerColor = KheloGreen),
-                            modifier = Modifier.testTag("create_team_btn")
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = null, tint = DarkBg, modifier = Modifier.size(15.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Create Team", color = DarkBg, fontWeight = FontWeight.Bold)
-                        }
+        }
+        if (selectedSection == 0) {
+            if (myTeam != null) item { MyTeamCard(team = myTeam, currentUser = currentUser, userById = userById, onChallengeClick = { selectedSection = 1 }, onRespondJoinRequest = { uid, accept -> onRespondJoinRequest(myTeam.id, uid, accept) }, onRemoveMember = { uid -> onRemoveMember(myTeam.id, uid) }) }
+            else item {
+                Card(Modifier.fillMaxWidth(), shape = RectangleShape, colors = CardDefaults.cardColors(containerColor = DarkSurfaceElevated), border = borderStroke(1.dp, DarkBorder)) {
+                    Column(Modifier.fillMaxWidth().padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(Icons.Default.Groups, null, tint = KheloGreenBright, modifier = Modifier.size(42.dp))
+                        Text("YOU DON'T HAVE A TEAM", color = TextPrimary, fontWeight = FontWeight.Black, fontSize = 16.sp)
+                        Text("Create your squad first, then challenge live opponents.", color = TextSecondary, fontSize = 12.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                        Spacer(Modifier.height(12.dp))
+                        Button(onClick = { showCreateTeamDialog = true }, shape = RectangleShape, colors = ButtonDefaults.buttonColors(containerColor = KheloGreen)) { Text("CREATE TEAM", color = Color.White, fontWeight = FontWeight.Black, fontSize = 13.sp) }
                     }
                 }
             }
-        }
-
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("TEAM CHALLENGE ARENA", color = TextPrimary, fontWeight = FontWeight.Black, fontSize = 12.sp, letterSpacing = 0.5.sp)
-                if (myTeam != null) {
-                    TextButton(onClick = { showChallengeDialog = true }, shape = RectangleShape) {
-                        Text("+ Send Challenge", color = KheloGreenBright, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+            item { Text("MY TEAM CHALLENGES", color = TextPrimary, fontWeight = FontWeight.Black, fontSize = 15.sp) }
+            val myChallenges = challenges.filter { it.challengerTeamId == currentUser.teamId || it.challengedTeamId == currentUser.teamId }
+            if (myChallenges.isEmpty()) item { Text("No team challenges yet.", color = TextMuted, fontSize = 12.sp) }
+            else items(myChallenges) { challenge -> TeamChallengeCard(challenge, currentUser, { onAcceptChallenge(challenge.id) }, { id, room, pass -> onSetChallengeRoom(id, room, pass) }, { onCancelChallenge(challenge.id) }) }
+        } else {
+            item {
+                Surface(Modifier.fillMaxWidth(), color = KheloGreenContainer, border = borderStroke(1.dp, KheloGreen), shape = RectangleShape) {
+                    Column(Modifier.padding(14.dp)) {
+                        Text("LIVE OPPONENT TEAMS ONLY", color = KheloGreenBright, fontWeight = FontWeight.Black, fontSize = 15.sp)
+                        Text("Only live teams appear here. You can challenge an opponent once while an active request exists.", color = TextSecondary, fontSize = 12.sp)
                     }
                 }
             }
-        }
-
-        if (challenges.isEmpty()) {
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RectangleShape,
-                    colors = CardDefaults.cardColors(containerColor = DarkSurfaceCard)
-                ) {
-                    Text(
-                        text = "No open team challenges right now. Challenge a rival squad!",
-                        color = TextMuted,
-                        fontSize = 11.sp,
-                        modifier = Modifier.padding(14.dp)
-                    )
-                }
-            }
-        } else {
-            items(challenges) { challenge ->
-                ChallengeCard(
-                    challenge = challenge,
-                    currentUser = currentUser,
-                    onAccept = { onAcceptChallenge(challenge.id) }
-                )
+            if (myTeam == null) item { Text("Create or join a team before challenging an opponent.", color = EsportsOrange, fontWeight = FontWeight.Bold, fontSize = 13.sp) }
+            else if (liveOpponentTeams.isEmpty()) item { Text("No live opponent team is available right now.", color = TextMuted, fontSize = 13.sp) }
+            else items(liveOpponentTeams) { team ->
+                TeamListItem(team, currentUser, { selectedOpponentId = team.id; showChallengeDialog = true }, { onSendJoinRequest(team.id); teamMessage = "Join request sent to " + team.name })
             }
         }
-
-        item {
-            Text("ALL ESPORTS SQUADS", color = TextPrimary, fontWeight = FontWeight.Black, fontSize = 12.sp, letterSpacing = 0.5.sp)
-        }
-
-        if (teamMessage != null) {
-            item {
-                Surface(color = Color(0xFF132B38), shape = RectangleShape, modifier = Modifier.fillMaxWidth()) {
-                    Text(teamMessage!!, color = EsportsCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(8.dp))
-                }
-            }
-        }
-
-        items(teams) { team ->
-            TeamListItem(
-                team = team,
-                currentUser = currentUser,
-                onSendJoinRequest = {
-                    onSendJoinRequest(team.id)
-                    teamMessage = "Join request sent to ${team.name}."
-                }
-            )
-        }
+        if (teamMessage != null) item { Surface(color = Color(0xFFEAF4F7), shape = RectangleShape, modifier = Modifier.fillMaxWidth()) { Text(teamMessage!!, color = EsportsCyan, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(10.dp)) } }
     }
-
-    if (showCreateTeamDialog) {
-        CreateTeamDialog(
-            captainId = currentUser.uid,
-            onDismiss = { showCreateTeamDialog = false },
-            onCreate = { name, tag, profileImageUrl, bannerUrl ->
-                onCreateTeam(name, tag, profileImageUrl, bannerUrl)
-                showCreateTeamDialog = false
-            }
-        )
-    }
-
-    if (showChallengeDialog && myTeam != null) {
-        SendChallengeDialog(
-            myTeam = myTeam,
-            availableTeams = teams.filter { it.id != myTeam.id },
-            onDismiss = { showChallengeDialog = false },
-            onSend = { targetTeamId, game, stake ->
-                onChallengeTeam(targetTeamId, game, stake)
-                showChallengeDialog = false
-            }
-        )
-    }
+    if (showCreateTeamDialog) CreateTeamDialog(currentUser.uid, { showCreateTeamDialog = false }) { name, tag, logo, banner -> onCreateTeam(name, tag, logo, banner); showCreateTeamDialog = false }
+    if (showChallengeDialog && myTeam != null) SendChallengeDialog(myTeam, liveOpponentTeams.filter { selectedOpponentId == null || it.id == selectedOpponentId }, { showChallengeDialog = false; selectedOpponentId = null }, { id, game, stake -> onChallengeTeam(id, game, stake); showChallengeDialog = false; selectedOpponentId = null })
 }
-
 @Composable
 fun MyTeamCard(
     team: Team,
@@ -371,141 +278,72 @@ fun MyTeamCard(
 }
 
 @Composable
-fun ChallengeCard(
-    challenge: TeamChallenge,
-    currentUser: UserProfile,
-    onAccept: () -> Unit
+fun TeamChallengeCard(
+    challenge: TeamChallenge, currentUser: UserProfile, onAccept: () -> Unit,
+    onSetRoom: (challengeId: String, roomId: String, password: String) -> Unit, onCancel: () -> Unit
 ) {
-    val isMyTeamChallenged = challenge.challengedTeamId == currentUser.teamId
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RectangleShape,
-        colors = CardDefaults.cardColors(containerColor = DarkSurfaceElevated),
-        border = borderStroke(1.dp, if (challenge.status == ChallengeStatus.PENDING) EsportsOrange else DarkBorder)
-    ) {
-        Column(modifier = Modifier.padding(10.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Surface(color = DarkSurfaceCard, shape = RectangleShape) {
-                    Text(challenge.game.uppercase(), color = KheloGreenBright, fontSize = 8.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
-                }
-                Surface(
-                    color = if (challenge.status == ChallengeStatus.ACCEPTED) Color(0xFF1B381A) else Color(0xFF3B2A0F),
-                    shape = RectangleShape
-                ) {
-                    Text(
-                        challenge.status.name,
-                        color = if (challenge.status == ChallengeStatus.ACCEPTED) KheloGreenBright else EsportsOrange,
-                        fontSize = 8.sp,
-                        fontWeight = FontWeight.Black,
-                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                    )
-                }
+    val isChallenged = challenge.challengedTeamId == currentUser.teamId
+    val isChallenger = challenge.challengerTeamId == currentUser.teamId
+    var roomId by remember(challenge.id, challenge.roomId) { mutableStateOf(challenge.roomId ?: "") }
+    var password by remember(challenge.id, challenge.roomPassword) { mutableStateOf(challenge.roomPassword ?: "") }
+    Card(Modifier.fillMaxWidth(), shape = RectangleShape, colors = CardDefaults.cardColors(containerColor = DarkSurfaceElevated), border = borderStroke(2.dp, if (challenge.status == ChallengeStatus.CANCELLED) EsportsRed else KheloGreen)) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(challenge.game.uppercase(), color = KheloGreenBright, fontWeight = FontWeight.Black, fontSize = 12.sp)
+                Text(challenge.status.name.replace("_", " "), color = if (challenge.status == ChallengeStatus.CANCELLED) EsportsRed else KheloGreenBright, fontWeight = FontWeight.Black, fontSize = 11.sp)
             }
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(challenge.challengerTeamName, color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                Text("VS", color = EsportsGold, fontWeight = FontWeight.Black, fontSize = 11.sp)
-                Text(challenge.challengedTeamName, color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text(challenge.challengerTeamName, color = TextPrimary, fontWeight = FontWeight.Black, fontSize = 15.sp)
+                Text("VS", color = EsportsGold, fontWeight = FontWeight.Black, fontSize = 16.sp)
+                Text(challenge.challengedTeamName, color = TextPrimary, fontWeight = FontWeight.Black, fontSize = 15.sp)
             }
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Stake: ৳${challenge.stakeAmount.toInt()}", color = TextSecondary, fontSize = 10.sp)
-                if (isMyTeamChallenged && challenge.status == ChallengeStatus.PENDING) {
-                    Button(
-                        onClick = onAccept,
-                        shape = RectangleShape,
-                        colors = ButtonDefaults.buttonColors(containerColor = KheloGreen),
-                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                        modifier = Modifier.height(28.dp)
-                    ) {
-                        Text("Accept Challenge", color = DarkBg, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+            Text("STAKE: ৳${challenge.stakeAmount.toInt()}", color = EsportsGold, fontWeight = FontWeight.Black, fontSize = 13.sp)
+            if (challenge.status == ChallengeStatus.PENDING && isChallenged) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = onAccept, shape = RectangleShape, colors = ButtonDefaults.buttonColors(containerColor = KheloGreen), modifier = Modifier.weight(1f).height(40.dp)) { Text("ACCEPT", color = Color.White, fontWeight = FontWeight.Black, fontSize = 13.sp) }
+                    OutlinedButton(onClick = onCancel, shape = RectangleShape, border = borderStroke(1.dp, EsportsRed), modifier = Modifier.weight(1f).height(40.dp)) { Text("CANCEL", color = EsportsRed, fontWeight = FontWeight.Black, fontSize = 13.sp) }
+                }
+            } else if (challenge.status == ChallengeStatus.PENDING && isChallenger) {
+                OutlinedButton(onClick = onCancel, shape = RectangleShape, border = borderStroke(1.dp, EsportsRed), modifier = Modifier.fillMaxWidth().height(40.dp)) { Text("CANCEL CHALLENGE", color = EsportsRed, fontWeight = FontWeight.Black, fontSize = 13.sp) }
+            }
+            if (challenge.status == ChallengeStatus.ACCEPTED && isChallenger) {
+                Text("ACCEPTED — SET ROOM ID & PASSWORD", color = KheloGreenBright, fontWeight = FontWeight.Black, fontSize = 13.sp)
+                OutlinedTextField(roomId, { roomId = it }, label = { Text("ROOM ID") }, singleLine = true, shape = RectangleShape, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(password, { password = it }, label = { Text("ROOM PASSWORD") }, singleLine = true, shape = RectangleShape, modifier = Modifier.fillMaxWidth())
+                Button(onClick = { onSetRoom(challenge.id, roomId, password) }, enabled = roomId.isNotBlank() && password.isNotBlank(), shape = RectangleShape, colors = ButtonDefaults.buttonColors(containerColor = KheloGreen), modifier = Modifier.fillMaxWidth().height(40.dp)) { Text("SAVE & SHOW ROOM TO OPPONENT", color = Color.White, fontWeight = FontWeight.Black, fontSize = 12.sp) }
+            }
+            if (challenge.status == ChallengeStatus.ROOM_SET) {
+                Surface(Modifier.fillMaxWidth(), color = Color(0xFFEAF4F7), border = borderStroke(1.dp, EsportsCyan), shape = RectangleShape) {
+                    Column(Modifier.padding(12.dp)) {
+                        Text("ROOM DETAILS", color = EsportsCyan, fontWeight = FontWeight.Black, fontSize = 13.sp)
+                        Text("Room ID: ${challenge.roomId}", color = TextPrimary, fontWeight = FontWeight.Black, fontSize = 15.sp)
+                        Text("Password: ${challenge.roomPassword}", color = TextPrimary, fontWeight = FontWeight.Black, fontSize = 15.sp)
                     }
                 }
+                OutlinedButton(onClick = onCancel, shape = RectangleShape, border = borderStroke(1.dp, EsportsRed), modifier = Modifier.fillMaxWidth().height(38.dp)) { Text("CANCEL MATCH", color = EsportsRed, fontWeight = FontWeight.Black, fontSize = 12.sp) }
             }
         }
     }
 }
-
 @Composable
-fun TeamListItem(
-    team: Team,
-    currentUser: UserProfile,
-    onSendJoinRequest: () -> Unit
-) {
+fun TeamListItem(team: Team, currentUser: UserProfile, onChallenge: () -> Unit, onSendJoinRequest: () -> Unit) {
     val alreadyMember = team.members.any { it.userId == currentUser.uid }
     val alreadyRequested = team.joinRequests.contains(currentUser.uid)
-    val canRequest = currentUser.teamId == null && !alreadyMember && !alreadyRequested
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RectangleShape,
-        colors = CardDefaults.cardColors(containerColor = DarkSurfaceCard)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                Avatar(imageUrl = team.profileImageUrl.ifBlank { team.logoUrl }, label = team.tag, size = 34.dp, fontSize = 11.sp)
-                Spacer(modifier = Modifier.width(8.dp))
-                Column {
-                    Text(team.name, color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                    Text("${team.members.size} Members • Captain: ${team.captainName}", color = TextSecondary, fontSize = 9.sp)
-                }
+    Card(Modifier.fillMaxWidth(), shape = RectangleShape, colors = CardDefaults.cardColors(containerColor = DarkSurfaceElevated), border = borderStroke(1.dp, if (team.isLive) KheloGreen else DarkBorder)) {
+        Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Avatar(team.profileImageUrl.ifBlank { team.logoUrl }, team.tag, 52.dp, 15.sp)
+            Spacer(Modifier.width(10.dp))
+            Column(Modifier.weight(1f)) {
+                Text(team.name, color = TextPrimary, fontWeight = FontWeight.Black, fontSize = 16.sp)
+                Text("[${team.tag}] • ${team.members.size} members", color = TextSecondary, fontSize = 12.sp)
+                Text(if (team.isLive) "LIVE • AVAILABLE FOR CHALLENGE" else "OFFLINE", color = if (team.isLive) KheloGreenBright else TextMuted, fontWeight = FontWeight.Black, fontSize = 11.sp)
+                Text("${team.wins} WINS • ${team.points} PTS", color = EsportsGold, fontWeight = FontWeight.Bold, fontSize = 11.sp)
             }
-
-            Column(horizontalAlignment = Alignment.End) {
-                Text("${team.points} PTS", color = EsportsGold, fontWeight = FontWeight.Black, fontSize = 11.sp)
-                Text("${team.wins} Wins", color = KheloGreenBright, fontSize = 9.sp)
-                Spacer(modifier = Modifier.height(4.dp))
-                when {
-                    alreadyMember -> {
-                        Surface(color = KheloGreenContainer, shape = RectangleShape) {
-                            Text("JOINED", color = KheloGreenBright, fontSize = 8.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
-                        }
-                    }
-                    alreadyRequested -> {
-                        Surface(color = Color(0xFF3B2A0F), shape = RectangleShape) {
-                            Text("REQUESTED", color = EsportsOrange, fontSize = 8.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
-                        }
-                    }
-                    canRequest -> {
-                        Button(
-                            onClick = onSendJoinRequest,
-                            shape = RectangleShape,
-                            colors = ButtonDefaults.buttonColors(containerColor = KheloGreen),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                            modifier = Modifier.height(26.dp)
-                        ) {
-                            Text("Request Join", color = DarkBg, fontSize = 9.sp, fontWeight = FontWeight.Black)
-                        }
-                    }
-                }
-            }
+            if (team.isLive && currentUser.teamId != null && !alreadyMember) Button(onClick = onChallenge, shape = RectangleShape, colors = ButtonDefaults.buttonColors(containerColor = KheloGreen), modifier = Modifier.height(42.dp)) { Text("CHALLENGE", color = Color.White, fontWeight = FontWeight.Black, fontSize = 11.sp) }
+            else if (currentUser.teamId == null && !alreadyMember && !alreadyRequested) OutlinedButton(onClick = onSendJoinRequest, shape = RectangleShape, modifier = Modifier.height(38.dp)) { Text("REQUEST JOIN", color = KheloGreenBright, fontWeight = FontWeight.Black, fontSize = 10.sp) }
         }
     }
 }
-
 @Composable
 fun CreateTeamDialog(
     captainId: String,

@@ -20,11 +20,11 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Generate Modern Gradle Wrapper
+    - name: Generate Gradle Wrapper 9.3.1
       run: |
         sudo apt-get update
         sudo apt-get install -y gradle
-        gradle wrapper --gradle-version 7.6.3
+        gradle wrapper --gradle-version 9.3.1
         chmod +x gradlew
 
     - name: Build Debug APK

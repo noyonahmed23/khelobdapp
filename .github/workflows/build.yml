@@ -20,17 +20,10 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Setup Gradle Wrapper
+    - name: Download Direct Gradle Binary
       run: |
-        if [ ! -f ./gradlew ]; then
-          echo "Downloading Gradle 8.7..."
-          wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip
-          unzip -q gradle-8.7-bin.zip
-          ./gradle-8.7/bin/gradle wrapper --gradle-version 8.7
-          chmod +x gradlew
-        else
-          chmod +x gradlew
-        fi
+        wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip
+        unzip -q gradle-8.7-bin.zip
 
     - name: Fix Kotlin DSL build.gradle.kts compatibility
       run: |
@@ -64,8 +57,8 @@ jobs:
             print("Skipped patching:", e)
         '
 
-    - name: Build Debug APK
-      run: ./gradlew assembleDebug --stacktrace
+    - name: Build Debug APK Directly with Gradle Binary
+      run: ./gradle-8.7/bin/gradle assembleDebug --stacktrace
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4

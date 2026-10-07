@@ -368,6 +368,7 @@ object FirebaseManager {
         val roomSetAtMillis = doc.getLong("roomSetAtMillis") ?: 0L
         val proofOpenAtMillis = doc.getLong("proofOpenAtMillis") ?: 0L
         val deadlineAtMillis = doc.getLong("deadlineAtMillis") ?: 0L
+        val timestamp = doc.getLong("timestamp") ?: System.currentTimeMillis()
         val challengerProofUrl = doc.getString("challengerProofUrl").takeIf { it?.isNotBlank() == true }
         val challengedProofUrl = doc.getString("challengedProofUrl").takeIf { it?.isNotBlank() == true }
         val winnerTeamId = doc.getString("winnerTeamId").takeIf { it?.isNotBlank() == true }
@@ -375,6 +376,7 @@ object FirebaseManager {
             id = id, challengerTeamId = cAId, challengerTeamName = cAName,
             challengedTeamId = cBId, challengedTeamName = cBName,
             game = game, stakeAmount = stake, status = status,
+            timestamp = timestamp,
             acceptedAtMillis = acceptedAtMillis, roomSetAtMillis = roomSetAtMillis,
             proofOpenAtMillis = proofOpenAtMillis, deadlineAtMillis = deadlineAtMillis,
             challengerProofUrl = challengerProofUrl, challengedProofUrl = challengedProofUrl,
@@ -656,6 +658,19 @@ object FirebaseManager {
                 )?.await()
             } catch (e: Exception) { Log.w(TAG, "syncSettingsToFirestore error: ${e.message}") }
         }
+    }
+
+    fun parseNotification(doc: DocumentSnapshot): NotificationItem? {
+        val userId = doc.getString("userId") ?: return null
+        return NotificationItem(
+            id = doc.getString("id") ?: doc.id,
+            userId = userId,
+            title = doc.getString("title") ?: "Notification",
+            message = doc.getString("message") ?: "",
+            type = doc.getString("type") ?: "INFO",
+            isRead = doc.getBoolean("isRead") ?: false,
+            timestamp = doc.getLong("timestamp") ?: System.currentTimeMillis()
+        )
     }
 
     fun syncNotificationToFirestore(item: NotificationItem) {

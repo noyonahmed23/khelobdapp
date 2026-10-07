@@ -60,7 +60,7 @@ fun SuperAdminScreen(
                     Spacer(modifier = Modifier.width(8.dp))
                     Column {
                         Text("SUPER ADMIN CONSOLE", color = EsportsGold, fontWeight = FontWeight.Black, fontSize = 13.sp, letterSpacing = 1.sp)
-                        Text("Protected Route: /LfyBdQzjhrRxKyfVum1YeCcssk23", color = TextMuted, fontSize = 8.sp)
+                        Text("Protected Route: /LfyBdQzjhrRxKyfVum1YeCcssk23", color = TextMuted, fontSize = 11.sp)
                     }
                 }
 
@@ -158,7 +158,7 @@ fun SuperAdminScreen(
                             ) {
                                 Column {
                                     Text("Emergency Maintenance Mode", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 11.sp)
-                                    Text("Blocks registrations and tournaments", color = TextMuted, fontSize = 9.sp)
+                                    Text("Blocks registrations and tournaments", color = TextMuted, fontSize = 11.sp)
                                 }
                                 Switch(
                                     checked = maintenanceMode,
@@ -186,7 +186,7 @@ fun SuperAdminScreen(
                             }
 
                             if (savedMessage) {
-                                Text("Platform settings updated successfully!", color = KheloGreenBright, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                Text("Platform settings updated successfully!", color = KheloGreenBright, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -211,7 +211,7 @@ fun SuperAdminScreen(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(user.username, color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                                Text("${user.email} • ${user.role.name}", color = if (user.role == UserRole.ADMIN) EsportsCyan else if (user.role == UserRole.SUPER_ADMIN) EsportsGold else TextSecondary, fontSize = 9.sp)
+                                Text("${user.email} • ${user.role.name}", color = if (user.role == UserRole.ADMIN) EsportsCyan else if (user.role == UserRole.SUPER_ADMIN) EsportsGold else TextSecondary, fontSize = 11.sp)
                             }
 
                             if (user.uid != currentUser.uid) {
@@ -224,7 +224,7 @@ fun SuperAdminScreen(
                                             contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
                                             modifier = Modifier.height(26.dp)
                                         ) {
-                                            Text("Make Admin", color = KheloGreenBright, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                                            Text("Make Admin", color = KheloGreenBright, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                         }
                                     } else {
                                         OutlinedButton(
@@ -234,7 +234,7 @@ fun SuperAdminScreen(
                                             contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
                                             modifier = Modifier.height(26.dp)
                                         ) {
-                                            Text("Demote", color = EsportsRed, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                                            Text("Demote", color = EsportsRed, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                         }
                                     }
                                 }

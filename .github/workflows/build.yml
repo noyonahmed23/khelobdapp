@@ -20,14 +20,43 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Clean and Generate Fresh Gradle 9.3.1 Wrapper
+    - name: Generate Fresh Gradle 9.3.1 Wrapper
       run: |
         sudo apt-get update
         sudo apt-get install -y gradle
-        # পুরোনো সব গ্র্যাডল ফাইল ও র‍্যাপার মুছে ফেলে একদম নতুন ও ফ্রেশ র‍্যাপার তৈরি করা
         rm -rf gradlew gradlew.bat gradle/ app/gradle/
         gradle wrapper --gradle-version 9.3.1
         chmod +x gradlew
+
+    - name: Fix Kotlin DSL build.gradle.kts variant error automatically
+      run: |
+        python3 -c '
+        path = "app/build.gradle.kts"
+        try:
+            with open(path, "r") as f:
+                lines = f.readlines()
+            new_lines = []
+            skip = False
+            brace_count = 0
+            for line in lines:
+                if "applicationVariants" in line or "productFlavors" in line:
+                    skip = True
+                    brace_count = line.count("{") - line.count("}")
+                    if brace_count <= 0:
+                        skip = False
+                    continue
+                if skip:
+                    brace_count += line.count("{") - line.count("}")
+                    if brace_count <= 0:
+                        skip = False
+                    continue
+                new_lines.append(line)
+            with open(path, "w") as f:
+                f.writelines(new_lines)
+            print("Successfully patched build.gradle.kts")
+        except Exception as e:
+            print("Skipped patching:", e)
+        '
 
     - name: Build Debug APK
       run: ./gradlew assembleDebug

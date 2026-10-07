@@ -103,7 +103,7 @@ android {
         }
     }
 
-    // Match the JDK 17 used by GitHub Actions / AGP 9.1
+    // JDK 17
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -112,8 +112,6 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
-
-        // Required because productFlavors use resValue()
         resValues = true
     }
 
@@ -172,15 +170,7 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(platform(libs.firebase.bom))
 
-    // implementation(libs.accompanist.permissions)
-
     implementation(libs.androidx.activity.compose)
-
-    // Camera
-    // implementation(libs.androidx.camera.camera2)
-    // implementation(libs.androidx.camera.core)
-    // implementation(libs.androidx.camera.lifecycle)
-    // implementation(libs.androidx.camera.view)
 
     implementation(libs.androidx.compose.material.icons.core)
     implementation(libs.androidx.compose.material.icons.extended)
@@ -190,8 +180,6 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
 
     implementation(libs.androidx.core.ktx)
-
-    // implementation(libs.androidx.datastore.preferences)
 
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -222,8 +210,6 @@ dependencies {
 
     implementation(libs.okhttp)
 
-    // implementation(libs.play.services.location)
-
     implementation(libs.retrofit)
 
     testImplementation(libs.androidx.compose.ui.test.junit4)
@@ -242,6 +228,6 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
-    "ksp"(libs.androidx.room.compiler)
-    "ksp"(libs.moshi.kotlin.codegen)
+    ksp(libs.androidx.room.compiler)
+    ksp(libs.moshi.kotlin.codegen)
 }

@@ -55,6 +55,8 @@ data class Tournament(
     val bannerUrl: String = "",
     val gameLogoUrl: String = "",
     val gameMode: String = "Squad",
+    val mapName: String = "Bermuda",
+    val perKillReward: Double = 0.0,
     val startAtMillis: Long = 0L,
     val registrationDeadlineAtMillis: Long = 0L,
     val description: String,
@@ -154,6 +156,12 @@ data class TeamChallenge(
     val stakeAmount: Double = 0.0,
     val scheduledTime: String = "Tomorrow, 08:00 PM",
     val status: ChallengeStatus = ChallengeStatus.PENDING,
+    val acceptedAtMillis: Long = 0L,
+    val roomSetAtMillis: Long = 0L,
+    val proofOpenAtMillis: Long = 0L,
+    val deadlineAtMillis: Long = 0L,
+    val challengerProofUrl: String? = null,
+    val challengedProofUrl: String? = null,
     val roomId: String? = null,
     val roomPassword: String? = null,
     val winnerTeamId: String? = null
@@ -309,6 +317,10 @@ data class UserChallenge(
     val opponentProofUrl: String? = null,
     val winnerUid: String? = null,
     val winnerName: String? = null,
+    val acceptedAtMillis: Long = 0L,
+    val roomSetAtMillis: Long = 0L,
+    val proofOpenAtMillis: Long = 0L,
+    val deadlineAtMillis: Long = 0L,
     val timestamp: Long = System.currentTimeMillis()
 )
 

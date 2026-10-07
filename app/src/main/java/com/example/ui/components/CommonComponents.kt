@@ -154,7 +154,7 @@ fun KheloTopBar(
                         Text(
                             text = "Esports Tournaments",
                             color = TextMuted,
-                            fontSize = 9.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -226,7 +226,7 @@ fun KheloTopBar(
                             label = {
                                 Text(
                                     text = currentUser.role.name,
-                                    fontSize = 9.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Black,
                                     color = if (currentUser.role == UserRole.SUPER_ADMIN) EsportsGold else EsportsCyan
                                 )
@@ -337,7 +337,7 @@ fun TournamentStatusBadge(status: TournamentStatus) {
         Text(
             text = text,
             color = textColor,
-            fontSize = 9.sp,
+            fontSize = 11.sp,
             fontWeight = FontWeight.Black,
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
             letterSpacing = 0.5.sp
@@ -366,7 +366,7 @@ fun MatchStatusBadge(status: MatchStatus) {
         Text(
             text = text,
             color = textColor,
-            fontSize = 9.sp,
+            fontSize = 11.sp,
             fontWeight = FontWeight.Black,
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
             letterSpacing = 0.5.sp

@@ -49,7 +49,8 @@ object FirebaseManager {
         onSettingsUpdate: (SystemSettings) -> Unit,
         onUserChallengesUpdate: (List<UserChallenge>) -> Unit = {},
         onWelcomePopupUpdate: (WelcomePopupConfig) -> Unit = {},
-        onUsersUpdate: (List<UserProfile>) -> Unit = {}
+        onUsersUpdate: (List<UserProfile>) -> Unit = {},
+        onNotificationsUpdate: (List<NotificationItem>) -> Unit = {}
     ) {
         val db = firestore ?: return
 
@@ -124,6 +125,13 @@ object FirebaseManager {
                 }
             }
             activeListeners.add(settingsListener)
+
+            // Notifications Listener
+            val notificationListener = db.collection("notifications").addSnapshotListener { snapshot, error ->
+                if (error != null) return@addSnapshotListener
+                if (snapshot != null) onNotificationsUpdate(snapshot.documents.mapNotNull { parseNotification(it) })
+            }
+            activeListeners.add(notificationListener)
 
             // User Challenges (1v1) Listener
             val userChalListener = db.collection("user_challenges").addSnapshotListener { snapshot, error ->
@@ -220,6 +228,8 @@ object FirebaseManager {
         val status = try { TournamentStatus.valueOf(statusStr) } catch (_: Exception) { TournamentStatus.REGISTRATION }
         val gameLogoUrl = doc.getString("gameLogoUrl") ?: ""
         val gameMode = doc.getString("gameMode") ?: "Squad"
+        val mapName = doc.getString("mapName") ?: "Bermuda"
+        val perKillReward = doc.getDouble("perKillReward") ?: 0.0
         val startAtMillis = doc.getLong("startAtMillis") ?: 0L
         val registrationDeadlineAtMillis = doc.getLong("registrationDeadlineAtMillis") ?: 0L
         val numGroups = (doc.getLong("numGroups") ?: 2L).toInt()
@@ -232,6 +242,7 @@ object FirebaseManager {
         val roomVisible = doc.getBoolean("roomVisible") ?: false
         return Tournament(
             id = id, title = title, game = game, gameLogoUrl = gameLogoUrl, gameMode = gameMode,
+            mapName = mapName, perKillReward = perKillReward,
             startAtMillis = startAtMillis, registrationDeadlineAtMillis = registrationDeadlineAtMillis,
             description = desc, entryFee = entryFee, prizePool = prizePool, maxParticipants = maxSlots,
             registeredCount = regCount, numGroups = numGroups, status = status,
@@ -412,6 +423,10 @@ object FirebaseManager {
         val opponentProofUrl = doc.getString("opponentProofUrl").takeIf { it?.isNotBlank() == true }
         val winnerUid = doc.getString("winnerUid").takeIf { it?.isNotBlank() == true }
         val winnerName = doc.getString("winnerName").takeIf { it?.isNotBlank() == true }
+        val acceptedAtMillis = doc.getLong("acceptedAtMillis") ?: 0L
+        val roomSetAtMillis = doc.getLong("roomSetAtMillis") ?: 0L
+        val proofOpenAtMillis = doc.getLong("proofOpenAtMillis") ?: 0L
+        val deadlineAtMillis = doc.getLong("deadlineAtMillis") ?: 0L
         val timestamp = doc.getLong("timestamp") ?: System.currentTimeMillis()
         return UserChallenge(
             id = id, challengerUid = challengerUid, challengerName = challengerName,
@@ -466,6 +481,7 @@ object FirebaseManager {
                     mapOf(
                         "id" to tournament.id, "title" to tournament.title, "game" to tournament.game,
                         "gameLogoUrl" to tournament.gameLogoUrl, "gameMode" to tournament.gameMode,
+                        "mapName" to tournament.mapName, "perKillReward" to tournament.perKillReward,
                         "startAtMillis" to tournament.startAtMillis,
                         "registrationDeadlineAtMillis" to tournament.registrationDeadlineAtMillis,
                         "description" to tournament.description, "entryFee" to tournament.entryFee,
@@ -574,7 +590,14 @@ object FirebaseManager {
                         "game" to challenge.game, "stakeAmount" to challenge.stakeAmount,
                         "status" to challenge.status.name,
                         "roomId" to (challenge.roomId ?: ""),
-                        "roomPassword" to (challenge.roomPassword ?: "")
+                        "roomPassword" to (challenge.roomPassword ?: ""),
+                        "acceptedAtMillis" to challenge.acceptedAtMillis,
+                        "roomSetAtMillis" to challenge.roomSetAtMillis,
+                        "proofOpenAtMillis" to challenge.proofOpenAtMillis,
+                        "deadlineAtMillis" to challenge.deadlineAtMillis,
+                        "challengerProofUrl" to (challenge.challengerProofUrl ?: ""),
+                        "challengedProofUrl" to (challenge.challengedProofUrl ?: ""),
+                        "winnerTeamId" to (challenge.winnerTeamId ?: "")
                     ), SetOptions.merge()
                 )?.await()
             } catch (e: Exception) { Log.w(TAG, "syncChallengeToFirestore error: ${e.message}") }
@@ -622,6 +645,32 @@ object FirebaseManager {
                     ), SetOptions.merge()
                 )?.await()
             } catch (e: Exception) { Log.w(TAG, "syncSettingsToFirestore error: ${e.message}") }
+        }
+    }
+
+    fun syncNotificationToFirestore(item: NotificationItem) {
+        scope.launch {
+            try {
+                firestore?.collection("notifications")?.document(item.id)?.set(
+                    mapOf(
+                        "id" to item.id,
+                        "userId" to item.userId,
+                        "title" to item.title,
+                        "message" to item.message,
+                        "type" to item.type,
+                        "isRead" to item.isRead,
+                        "timestamp" to item.timestamp
+                    ), SetOptions.merge()
+                )?.await()
+            } catch (e: Exception) { Log.w(TAG, "syncNotificationToFirestore error") }
+        }
+    }
+
+    fun updateNotificationReadState(notificationId: String, isRead: Boolean) {
+        scope.launch {
+            try {
+                firestore?.collection("notifications")?.document(notificationId)?.update("isRead", isRead)?.await()
+            } catch (e: Exception) { Log.w(TAG, "updateNotificationReadState error") }
         }
     }
 

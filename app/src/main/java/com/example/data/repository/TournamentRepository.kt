@@ -101,6 +101,7 @@ object TournamentRepository {
     const val CHALLENGE_STAKE = 50.0      // deducted from each player on acceptance
     const val CHALLENGE_WINNER_PAYOUT = 85.0 // credited to winner
     const val CHALLENGE_PLATFORM_FEE = 15.0  // retained by platform
+    const val TEAM_WINNER_PAYOUT = 85.0
 
     init {
         SessionStore.restore()?.let { restored ->
@@ -126,6 +127,7 @@ object TournamentRepository {
             onSettingsUpdate = { _settings.value = it },
             onUserChallengesUpdate = { _userChallenges.value = it },
             onWelcomePopupUpdate = { _welcomePopup.value = it },
+            onNotificationsUpdate = { dbNotifications -> _notifications.value = dbNotifications },
             onUsersUpdate = { dbUsers ->
                 _users.value = dbUsers
                 // Keep the logged-in profile fresh (wallet, stats, team, images) from DB
@@ -815,174 +817,260 @@ object TournamentRepository {
         _users.value.find { it.uid == userId }?.let { upsertUser(it.copy(teamId = null, teamName = null)) }
     }
 
+    // ==================== Team vs Team Challenges ====================
+
+    private fun teamCaptain(teamId: String): UserProfile? {
+        val team = _teams.value.find { it.id == teamId } ?: return null
+        return _users.value.find { it.uid == team.captainId }
+    }
+
     fun challengeTeam(challengedTeamId: String, game: String, stakeAmount: Double): Result<Unit> {
-        val myTeamId = _currentUser.value.teamId
-            ?: return Result.failure(Exception("You must be in a team to challenge."))
+        val me = _currentUser.value
+        val myTeamId = me.teamId ?: return Result.failure(Exception("আপনাকে আগে একটি টিমে থাকতে হবে।"))
+        val myTeam = _teams.value.find { it.id == myTeamId } ?: return Result.failure(Exception("আপনার টিম পাওয়া যায়নি।"))
+        val opponent = _teams.value.find { it.id == challengedTeamId } ?: return Result.failure(Exception("প্রতিপক্ষ টিম পাওয়া যায়নি।"))
 
-        val challengedTeam = _teams.value.find { it.id == challengedTeamId }
-            ?: return Result.failure(Exception("Opponent team not found."))
-        val myTeam = _teams.value.find { it.id == myTeamId }
-            ?: return Result.failure(Exception("Your team was not found."))
+        if (myTeam.captainId != me.uid) return Result.failure(Exception("শুধু টিম ক্যাপ্টেনই টিম চ্যালেঞ্জ পাঠাতে পারবেন।"))
+        if (myTeam.id == opponent.id) return Result.failure(Exception("নিজের টিমকে চ্যালেঞ্জ করা যাবে না।"))
+        if (!opponent.isLive) return Result.failure(Exception("প্রতিপক্ষ টিমটি এখন লাইভ নেই।"))
+        if (stakeAmount + 0.01 < CHALLENGE_STAKE) return Result.failure(Exception("টিম চ্যালেঞ্জের জন্য ন্যূনতম ৫০ টাকা প্রয়োজন।"))
+        if (me.walletBalance < CHALLENGE_STAKE) return Result.failure(Exception("আপনার অ্যাকাউন্টে পর্যাপ্ত ব্যালেন্স নেই। আগে ডিপোজিট করুন।"))
 
-        if (challengedTeam.id == myTeam.id) {
-            return Result.failure(Exception("You cannot challenge your own team."))
+        val duplicate = _challenges.value.any { ch ->
+            ch.status in setOf(
+                ChallengeStatus.PENDING,
+                ChallengeStatus.ACCEPTED,
+                ChallengeStatus.ROOM_SET,
+                ChallengeStatus.PROOF_SUBMITTED,
+                ChallengeStatus.UNDER_REVIEW
+            ) && (
+                (ch.challengerTeamId == myTeam.id && ch.challengedTeamId == opponent.id) ||
+                    (ch.challengerTeamId == opponent.id && ch.challengedTeamId == myTeam.id)
+                )
         }
-        if (!challengedTeam.isLive) {
-            return Result.failure(Exception("This team is not live/available for a challenge."))
-        }
-        if (stakeAmount <= 0.0) {
-            return Result.failure(Exception("Challenge stake must be greater than zero."))
-        }
-        if (_currentUser.value.walletBalance < stakeAmount) {
-            return Result.failure(Exception("Your wallet does not have enough balance for this challenge."))
-        }
-        val duplicate = _challenges.value.any {
-            it.status == ChallengeStatus.PENDING &&
-                ((it.challengerTeamId == myTeam.id && it.challengedTeamId == challengedTeam.id) ||
-                 (it.challengerTeamId == challengedTeam.id && it.challengedTeamId == myTeam.id))
-        }
-        if (duplicate) {
-            return Result.failure(Exception("An active challenge already exists between these teams."))
-        }
+        if (duplicate) return Result.failure(Exception("এই দুই টিমের মধ্যে একটি চলমান চ্যালেঞ্জ আগে থেকেই আছে।"))
 
         val challenge = TeamChallenge(
             challengerTeamId = myTeam.id,
             challengerTeamName = myTeam.name,
-            challengedTeamId = challengedTeam.id,
-            challengedTeamName = challengedTeam.name,
-            game = game,
-            stakeAmount = stakeAmount,
+            challengedTeamId = opponent.id,
+            challengedTeamName = opponent.name,
+            game = game.ifBlank { "Free Fire" },
+            stakeAmount = CHALLENGE_STAKE,
             status = ChallengeStatus.PENDING
         )
         _challenges.value = listOf(challenge) + _challenges.value
         FirebaseManager.syncChallengeToFirestore(challenge)
+
         addNotification(
-            userId = challengedTeam.captainId,
-            title = "Team Challenge Received",
-            message = myTeam.name + " challenged your team for ৳" + stakeAmount.toInt() + ".",
-            type = "MATCH"
+            opponent.captainId,
+            "টিম চ্যালেঞ্জ এসেছে",
+            myTeam.name + " আপনাদের " + opponent.name + "-কে ৫০ টাকার " + challenge.game + " চ্যালেঞ্জ দিয়েছে।",
+            "TEAM_CHALLENGE"
         )
         return Result.success(Unit)
     }
 
     fun acceptChallenge(challengeId: String): Result<Unit> {
-        val challenge = _challenges.value.find { it.id == challengeId }
-            ?: return Result.failure(Exception("Challenge not found."))
-        if (challenge.status != ChallengeStatus.PENDING) {
-            return Result.failure(Exception("This challenge is no longer pending."))
+        val challenge = _challenges.value.find { it.id == challengeId } ?: return Result.failure(Exception("চ্যালেঞ্জ পাওয়া যায়নি।"))
+        if (challenge.status != ChallengeStatus.PENDING) return Result.failure(Exception("এই চ্যালেঞ্জটি আর গ্রহণযোগ্য নয়।"))
+
+        val me = _currentUser.value
+        val myTeamId = me.teamId ?: return Result.failure(Exception("আপনি কোনো টিমে নেই।"))
+        if (myTeamId != challenge.challengedTeamId) return Result.failure(Exception("শুধু যাকে চ্যালেঞ্জ করা হয়েছে সেই টিমই Accept করতে পারবে।"))
+
+        val myTeam = _teams.value.find { it.id == myTeamId } ?: return Result.failure(Exception("আপনার টিম পাওয়া যায়নি।"))
+        if (myTeam.captainId != me.uid) return Result.failure(Exception("শুধু টিম ক্যাপ্টেনই Accept করতে পারবেন।"))
+
+        val challengerCaptain = teamCaptain(challenge.challengerTeamId)
+            ?: return Result.failure(Exception("চ্যালেঞ্জার টিমের ক্যাপ্টেন পাওয়া যায়নি।"))
+        val challengedCaptain = teamCaptain(challenge.challengedTeamId)
+            ?: return Result.failure(Exception("আপনার টিমের ক্যাপ্টেন পাওয়া যায়নি।"))
+
+        if (challengerCaptain.walletBalance < CHALLENGE_STAKE) return Result.failure(Exception("চ্যালেঞ্জার টিমের অ্যাকাউন্টে ৫০ টাকা নেই।"))
+        if (challengedCaptain.walletBalance < CHALLENGE_STAKE) return Result.failure(Exception("আপনার টিমের অ্যাকাউন্টে ৫০ টাকা নেই। আগে ডিপোজিট করুন।"))
+
+        if (!applyWalletChange(challengerCaptain.uid, -CHALLENGE_STAKE)) {
+            return Result.failure(Exception("চ্যালেঞ্জার টিমের ৫০ টাকা লক করা যায়নি।"))
+        }
+        if (!applyWalletChange(challengedCaptain.uid, -CHALLENGE_STAKE)) {
+            applyWalletChange(challengerCaptain.uid, CHALLENGE_STAKE)
+            return Result.failure(Exception("আপনার ৫০ টাকা লক করা যায়নি।"))
         }
 
-        val myTeamId = _currentUser.value.teamId
-            ?: return Result.failure(Exception("You are not in a team."))
-        if (myTeamId != challenge.challengedTeamId) {
-            return Result.failure(Exception("Only the challenged team can accept this challenge."))
-        }
-
-        val myTeam = _teams.value.find { it.id == myTeamId }
-            ?: return Result.failure(Exception("Your team was not found."))
-        if (_currentUser.value.uid != myTeam.captainId) {
-            return Result.failure(Exception("Only the team captain can accept a team challenge."))
-        }
-        if (_currentUser.value.walletBalance < challenge.stakeAmount) {
-            return Result.failure(Exception("Your team captain wallet does not have enough balance."))
-        }
-
-        val updatedChal = challenge.copy(status = ChallengeStatus.ACCEPTED)
-        _challenges.value = _challenges.value.map {
-            if (it.id == challengeId) updatedChal else it
-        }
-        FirebaseManager.syncChallengeToFirestore(updatedChal)
-
+        val acceptedAt = System.currentTimeMillis()
+        val updated = challenge.copy(
+            stakeAmount = CHALLENGE_STAKE,
+            status = ChallengeStatus.ACCEPTED,
+            acceptedAtMillis = acceptedAt,
+            deadlineAtMillis = acceptedAt + 60 * 60 * 1000L
+        )
+        _challenges.value = _challenges.value.map { if (it.id == challengeId) updated else it }
+        FirebaseManager.syncChallengeToFirestore(updated)
         addNotification(
-            userId = challenge.challengerTeamId,
-            title = "Team Challenge Accepted",
-            message = challenge.challengedTeamName + " accepted. Waiting for room credentials.",
-            type = "MATCH"
+            challengerCaptain.uid,
+            "টিম চ্যালেঞ্জ Accept হয়েছে",
+            challenge.challengedTeamName + " Accept করেছে। ২০ মিনিটের মধ্যে Room ID ও Password দিন।",
+            "TEAM_CHALLENGE"
         )
         return Result.success(Unit)
     }
 
     fun setTeamChallengeRoom(challengeId: String, roomId: String, password: String): Result<Unit> {
-        val challenge = _challenges.value.find { it.id == challengeId }
-            ?: return Result.failure(Exception("Challenge not found."))
-        if (challenge.status != ChallengeStatus.ACCEPTED) {
-            return Result.failure(Exception("Accept the challenge before setting the room."))
-        }
-        val myTeamId = _currentUser.value.teamId
-            ?: return Result.failure(Exception("You are not in a team."))
+        val challenge = _challenges.value.find { it.id == challengeId } ?: return Result.failure(Exception("চ্যালেঞ্জ পাওয়া যায়নি।"))
+        if (challenge.status != ChallengeStatus.ACCEPTED) return Result.failure(Exception("Accept হওয়ার পরেই Room ID ও Password দেওয়া যাবে।"))
+
+        val me = _currentUser.value
+        val myTeamId = me.teamId ?: return Result.failure(Exception("আপনি কোনো টিমে নেই।"))
         val myTeam = _teams.value.find { it.id == myTeamId }
-        if (myTeamId != challenge.challengerTeamId || _currentUser.value.uid != myTeam?.captainId) {
-            return Result.failure(Exception("Only the challenging team captain can set the room."))
+        if (myTeamId != challenge.challengerTeamId || myTeam?.captainId != me.uid) {
+            return Result.failure(Exception("শুধু চ্যালেঞ্জ পাঠানো টিমের ক্যাপ্টেন Room দিতে পারবেন।"))
         }
-        if (roomId.isBlank() || password.isBlank()) {
-            return Result.failure(Exception("Room ID and password are required."))
+        if (roomId.isBlank() || password.isBlank()) return Result.failure(Exception("Room ID এবং Password দুটোই দিতে হবে।"))
+
+        val acceptedAt = challenge.acceptedAtMillis.takeIf { it > 0L } ?: challenge.timestamp
+        if (System.currentTimeMillis() > acceptedAt + 20 * 60 * 1000L) {
+            return Result.failure(Exception("Room দেওয়ার ২০ মিনিটের সময় শেষ হয়ে গেছে।"))
         }
+
+        val now = System.currentTimeMillis()
         val updated = challenge.copy(
             roomId = roomId.trim(),
             roomPassword = password.trim(),
-            status = ChallengeStatus.ROOM_SET
+            status = ChallengeStatus.ROOM_SET,
+            roomSetAtMillis = now,
+            proofOpenAtMillis = now + 10 * 60 * 1000L,
+            deadlineAtMillis = challenge.deadlineAtMillis.takeIf { it > 0L } ?: (acceptedAt + 60 * 60 * 1000L)
         )
         _challenges.value = _challenges.value.map { if (it.id == challengeId) updated else it }
         FirebaseManager.syncChallengeToFirestore(updated)
-        val opponentCaptain = _teams.value.find { it.id == challenge.challengedTeamId }?.captainId
-        if (!opponentCaptain.isNullOrBlank()) {
-            addNotification(
-                userId = opponentCaptain,
-                title = "Team Room Ready",
-                message = "Room ID: " + roomId + " | Password: " + password,
-                type = "MATCH"
-            )
+
+        teamCaptain(challenge.challengedTeamId)?.let {
+            addNotification(it.uid, "টিম Room Ready", "Room ID ও Password এসেছে। ভুল হলে “Wrong Room” রিপোর্ট করুন।", "TEAM_CHALLENGE")
         }
         return Result.success(Unit)
     }
 
+    fun submitTeamChallengeProof(challengeId: String, proofUrl: String): Result<Unit> {
+        val challenge = _challenges.value.find { it.id == challengeId } ?: return Result.failure(Exception("চ্যালেঞ্জ পাওয়া যায়নি।"))
+        if (challenge.status != ChallengeStatus.ROOM_SET && challenge.status != ChallengeStatus.PROOF_SUBMITTED) {
+            return Result.failure(Exception("Room সেট হওয়ার পরেই Screenshot/Proof দেওয়া যাবে।"))
+        }
+        if (proofUrl.isBlank()) return Result.failure(Exception("একটি Screenshot upload করুন।"))
+        if (challenge.proofOpenAtMillis > 0L && System.currentTimeMillis() < challenge.proofOpenAtMillis) {
+            val minutes = ((challenge.proofOpenAtMillis - System.currentTimeMillis() + 59_999L) / 60_000L)
+            return Result.failure(Exception("Proof option " + minutes + " মিনিট পরে খুলবে।"))
+        }
+
+        val me = _currentUser.value
+        val myTeamId = me.teamId ?: return Result.failure(Exception("আপনি কোনো টিমে নেই।"))
+        val updated = when {
+            myTeamId == challenge.challengerTeamId -> challenge.copy(challengerProofUrl = proofUrl)
+            myTeamId == challenge.challengedTeamId -> challenge.copy(challengedProofUrl = proofUrl)
+            else -> return Result.failure(Exception("আপনি এই চ্যালেঞ্জের অংশ নন।"))
+        }
+        val finalStatus = if (!updated.challengerProofUrl.isNullOrBlank() && !updated.challengedProofUrl.isNullOrBlank()) {
+            ChallengeStatus.UNDER_REVIEW
+        } else ChallengeStatus.PROOF_SUBMITTED
+
+        val saved = updated.copy(status = finalStatus)
+        _challenges.value = _challenges.value.map { if (it.id == challengeId) saved else it }
+        FirebaseManager.syncChallengeToFirestore(saved)
+        return Result.success(Unit)
+    }
+
+    fun reportTeamChallengeRoomInvalid(challengeId: String): Result<Unit> {
+        val challenge = _challenges.value.find { it.id == challengeId } ?: return Result.failure(Exception("চ্যালেঞ্জ পাওয়া যায়নি।"))
+        if (challenge.status != ChallengeStatus.ROOM_SET && challenge.status != ChallengeStatus.PROOF_SUBMITTED) {
+            return Result.failure(Exception("এই সময় Wrong Room রিপোর্ট করা যাবে না।"))
+        }
+        val myTeamId = _currentUser.value.teamId ?: return Result.failure(Exception("আপনি কোনো টিমে নেই।"))
+        if (myTeamId != challenge.challengedTeamId) return Result.failure(Exception("Wrong Room শুধু প্রতিপক্ষ টিম রিপোর্ট করতে পারবে।"))
+        return declareTeamChallengeWinner(challengeId, challenge.challengedTeamId, "ভুল Room ID/Password রিপোর্ট করা হয়েছে।")
+    }
+
+    fun declareTeamChallengeWinner(challengeId: String, winnerTeamId: String, reason: String = "Admin result"): Result<Unit> {
+        val challenge = _challenges.value.find { it.id == challengeId } ?: return Result.failure(Exception("চ্যালেঞ্জ পাওয়া যায়নি।"))
+        if (challenge.status == ChallengeStatus.COMPLETED || challenge.status == ChallengeStatus.CANCELLED) return Result.failure(Exception("এই চ্যালেঞ্জ ইতিমধ্যে শেষ হয়েছে।"))
+        if (winnerTeamId != challenge.challengerTeamId && winnerTeamId != challenge.challengedTeamId) return Result.failure(Exception("Winner অবশ্যই অংশ নেওয়া একটি টিম হতে হবে।"))
+
+        val winnerCaptain = teamCaptain(winnerTeamId) ?: return Result.failure(Exception("Winner টিমের ক্যাপ্টেন পাওয়া যায়নি।"))
+        val loserTeamId = if (winnerTeamId == challenge.challengerTeamId) challenge.challengedTeamId else challenge.challengerTeamId
+        applyWalletChange(winnerCaptain.uid, TEAM_WINNER_PAYOUT)
+
+        val updated = challenge.copy(status = ChallengeStatus.COMPLETED, winnerTeamId = winnerTeamId)
+        _challenges.value = _challenges.value.map { if (it.id == challengeId) updated else it }
+        FirebaseManager.syncChallengeToFirestore(updated)
+
+        _teams.value = _teams.value.map { team ->
+            when (team.id) {
+                winnerTeamId -> {
+                    val t = team.copy(matches = team.matches + 1, wins = team.wins + 1, points = team.points + 3)
+                    FirebaseManager.syncTeamToFirestore(t)
+                    t
+                }
+                loserTeamId -> {
+                    val t = team.copy(matches = team.matches + 1, losses = team.losses + 1)
+                    FirebaseManager.syncTeamToFirestore(t)
+                    t
+                }
+                else -> team
+            }
+        }
+        teamCaptain(loserTeamId)?.let {
+            addNotification(it.uid, "টিম ম্যাচ শেষ", "এই টিম ম্যাচে আপনি হেরে গেছেন।", "TEAM_CHALLENGE")
+        }
+        addNotification(winnerCaptain.uid, "টিম ম্যাচ জয়", "আপনার টিম জিতেছে। ৮৫ টাকা Wallet-এ যোগ হয়েছে।", "TEAM_CHALLENGE")
+        logAdminAction("TEAM_CHALLENGE_COMPLETED", "TeamChallenge", challengeId, reason + " Winner=" + winnerTeamId)
+        return Result.success(Unit)
+    }
+
     fun cancelChallenge(challengeId: String): Result<Unit> {
-        val challenge = _challenges.value.find { it.id == challengeId }
-            ?: return Result.failure(Exception("Challenge not found."))
-        if (challenge.status != ChallengeStatus.PENDING &&
-            challenge.status != ChallengeStatus.ACCEPTED &&
-            challenge.status != ChallengeStatus.ROOM_SET) {
-            return Result.failure(Exception("This challenge cannot be cancelled."))
-        }
-        val myTeamId = _currentUser.value.teamId
-            ?: return Result.failure(Exception("You are not in a team."))
+        val challenge = _challenges.value.find { it.id == challengeId } ?: return Result.failure(Exception("চ্যালেঞ্জ পাওয়া যায়নি।"))
+        if (challenge.status !in setOf(
+                ChallengeStatus.PENDING,
+                ChallengeStatus.ACCEPTED,
+                ChallengeStatus.ROOM_SET,
+                ChallengeStatus.PROOF_SUBMITTED
+            )) return Result.failure(Exception("এই চ্যালেঞ্জ এখন Cancel করা যাবে না।"))
+
+        val myTeamId = _currentUser.value.teamId ?: return Result.failure(Exception("আপনি কোনো টিমে নেই।"))
         if (myTeamId != challenge.challengerTeamId && myTeamId != challenge.challengedTeamId) {
-            return Result.failure(Exception("You are not part of this challenge."))
+            return Result.failure(Exception("আপনি এই চ্যালেঞ্জের অংশ নন।"))
         }
+
+        if (challenge.status != ChallengeStatus.PENDING) {
+            teamCaptain(challenge.challengerTeamId)?.let { applyWalletChange(it.uid, CHALLENGE_STAKE) }
+            teamCaptain(challenge.challengedTeamId)?.let { applyWalletChange(it.uid, CHALLENGE_STAKE) }
+        }
+
         val updated = challenge.copy(status = ChallengeStatus.CANCELLED)
         _challenges.value = _challenges.value.map { if (it.id == challengeId) updated else it }
         FirebaseManager.syncChallengeToFirestore(updated)
         return Result.success(Unit)
     }
 
-    // ==================== 1v1 User Challenges ====================
+    // ==================== 1v1 Player Challenges ====================
 
-    /**
-     * Step 1 — Challenger sends a 1v1 request. Requires at least CHALLENGE_STAKE in wallet.
-     * No money is deducted yet; deduction happens when the opponent accepts.
-     */
     fun sendUserChallenge(opponentUid: String, opponentName: String): Result<Unit> {
         val challenger = _currentUser.value
-        if (opponentUid == challenger.uid) {
-            return Result.failure(Exception("You cannot challenge yourself."))
-        }
-        val opponent = _users.value.find { it.uid == opponentUid }
-            ?: return Result.failure(Exception("Opponent not found."))
-        if (challenger.teamId != null && challenger.teamId == opponent.teamId) {
-            return Result.failure(Exception("You cannot challenge your own team member."))
-        }
-        if (challenger.walletBalance < CHALLENGE_STAKE) {
-            return Result.failure(Exception("Insufficient balance. You need at least ৳${CHALLENGE_STAKE.toInt()} to send a challenge."))
-        }
-        // Prevent duplicate open challenges between the same two players
-        val alreadyOpen = _userChallenges.value.any {
-            it.status == UserChallengeStatus.PENDING &&
-                ((it.challengerUid == challenger.uid && it.opponentUid == opponentUid) ||
-                    (it.challengerUid == opponentUid && it.opponentUid == challenger.uid))
-        }
-        if (alreadyOpen) {
-            return Result.failure(Exception("You already have an open challenge with this player."))
-        }
+        if (opponentUid == challenger.uid) return Result.failure(Exception("নিজেকে চ্যালেঞ্জ করা যাবে না।"))
+        val opponent = _users.value.find { it.uid == opponentUid } ?: return Result.failure(Exception("প্রতিপক্ষ খেলোয়াড় পাওয়া যায়নি।"))
+        if (challenger.teamId != null && challenger.teamId == opponent.teamId) return Result.failure(Exception("নিজের টিমের সদস্যকে চ্যালেঞ্জ করা যাবে না।"))
+        if (challenger.walletBalance < CHALLENGE_STAKE) return Result.failure(Exception("আপনার অ্যাকাউন্টে পর্যাপ্ত ব্যালেন্স নেই। আগে ডিপোজিট করুন।"))
+
+        val openStatuses = setOf(
+            UserChallengeStatus.PENDING,
+            UserChallengeStatus.ACCEPTED,
+            UserChallengeStatus.ROOM_SET,
+            UserChallengeStatus.PROOF_SUBMITTED,
+            UserChallengeStatus.UNDER_REVIEW
+        )
+        if (_userChallenges.value.any {
+                it.status in openStatuses &&
+                    ((it.challengerUid == challenger.uid && it.opponentUid == opponentUid) ||
+                        (it.challengerUid == opponentUid && it.opponentUid == challenger.uid))
+            }) return Result.failure(Exception("এই খেলোয়াড়ের সাথে একটি চলমান চ্যালেঞ্জ আগে থেকেই আছে।"))
 
         val challenge = UserChallenge(
             challengerUid = challenger.uid,
@@ -994,198 +1082,219 @@ object TournamentRepository {
         )
         _userChallenges.value = listOf(challenge) + _userChallenges.value
         FirebaseManager.syncUserChallengeToFirestore(challenge)
-        addNotification(
-            userId = opponentUid,
-            title = "1v1 Challenge Received!",
-            message = "${challenger.username} challenged you to a Free Fire 1v1 for ৳${CHALLENGE_STAKE.toInt()}.",
-            type = "MATCH"
-        )
+        addNotification(opponentUid, "1v1 চ্যালেঞ্জ এসেছে", challenger.username + " আপনাকে ৫০ টাকার Free Fire 1v1 চ্যালেঞ্জ দিয়েছে।", "PLAYER_CHALLENGE")
         return Result.success(Unit)
     }
 
-    /**
-     * Step 2 — Opponent accepts. CHALLENGE_STAKE is deducted from BOTH wallets (total pool = 100 TK).
-     */
     fun acceptUserChallenge(challengeId: String): Result<Unit> {
-        val challenge = _userChallenges.value.find { it.id == challengeId }
-            ?: return Result.failure(Exception("Challenge not found."))
-        if (challenge.status != UserChallengeStatus.PENDING) {
-            return Result.failure(Exception("This challenge is no longer pending."))
-        }
-        val accepter = _currentUser.value
-        if (accepter.uid != challenge.opponentUid) {
-            return Result.failure(Exception("Only the invited opponent can accept this challenge."))
-        }
-        if (accepter.walletBalance < CHALLENGE_STAKE) {
-            return Result.failure(Exception("Insufficient balance. You need at least ৳${CHALLENGE_STAKE.toInt()} to accept."))
-        }
-        val challenger = _users.value.find { it.uid == challenge.challengerUid }
-        if (challenger == null || challenger.walletBalance < CHALLENGE_STAKE) {
-            return Result.failure(Exception("Challenger no longer has enough balance."))
-        }
+        val challenge = _userChallenges.value.find { it.id == challengeId } ?: return Result.failure(Exception("চ্যালেঞ্জ পাওয়া যায়নি।"))
+        if (challenge.status != UserChallengeStatus.PENDING) return Result.failure(Exception("এই চ্যালেঞ্জটি আর Accept করা যাবে না."))
+        val me = _currentUser.value
+        if (me.uid != challenge.opponentUid) return Result.failure(Exception("শুধু আমন্ত্রিত খেলোয়াড় Accept করতে পারবেন।"))
+        if (me.walletBalance < CHALLENGE_STAKE) return Result.failure(Exception("আপনার অ্যাকাউন্টে পর্যাপ্ত ব্যালেন্স নেই। আগে ডিপোজিট করুন।"))
 
-        // Deduct stake from both players
-        if (!applyWalletChange(challenge.challengerUid, -CHALLENGE_STAKE)) {
-            return Result.failure(Exception("Could not deduct challenger stake."))
-        }
+        val challenger = _users.value.find { it.uid == challenge.challengerUid } ?: return Result.failure(Exception("চ্যালেঞ্জার খেলোয়াড় পাওয়া যায়নি।"))
+        if (challenger.walletBalance < CHALLENGE_STAKE) return Result.failure(Exception("চ্যালেঞ্জার খেলোয়াড়ের ব্যালেন্স কমে গেছে।"))
+
+        if (!applyWalletChange(challenge.challengerUid, -CHALLENGE_STAKE)) return Result.failure(Exception("চ্যালেঞ্জারের ৫০ টাকা লক করা যায়নি।"))
         if (!applyWalletChange(challenge.opponentUid, -CHALLENGE_STAKE)) {
-            // Roll back the challenger deduction to stay consistent
             applyWalletChange(challenge.challengerUid, CHALLENGE_STAKE)
-            return Result.failure(Exception("Could not deduct your stake."))
+            return Result.failure(Exception("আপনার ৫০ টাকা লক করা যায়নি।"))
         }
 
-        val updated = challenge.copy(status = UserChallengeStatus.ACCEPTED)
+        val acceptedAt = System.currentTimeMillis()
+        val updated = challenge.copy(status = UserChallengeStatus.ACCEPTED, acceptedAtMillis = acceptedAt, deadlineAtMillis = acceptedAt + 60 * 60 * 1000L)
         _userChallenges.value = _userChallenges.value.map { if (it.id == challengeId) updated else it }
         FirebaseManager.syncUserChallengeToFirestore(updated)
-        listOf(challenge.challengerUid to challenge.challengerName, challenge.opponentUid to accepter.username).forEach { (uid, name) ->
-            addNotification(
-                userId = uid,
-                title = "Challenge Accepted — ৳${CHALLENGE_STAKE.toInt()} deducted",
-                message = "$name, the 1v1 is on. The challenger will share the Room ID & password shortly.",
-                type = "MATCH"
-            )
-        }
+        addNotification(challenge.challengerUid, "1v1 Accept হয়েছে", me.username + " Accept করেছে। ২০ মিনিটের মধ্যে Room ID ও Password দিন.", "PLAYER_CHALLENGE")
         return Result.success(Unit)
     }
 
     fun cancelUserChallenge(challengeId: String): Result<Unit> {
-        val challenge = _userChallenges.value.find { it.id == challengeId }
-            ?: return Result.failure(Exception("Challenge not found."))
-        if (challenge.status != UserChallengeStatus.PENDING &&
-            challenge.status != UserChallengeStatus.ACCEPTED &&
-            challenge.status != UserChallengeStatus.ROOM_SET) {
-            return Result.failure(Exception("This challenge cannot be cancelled now."))
-        }
+        val challenge = _userChallenges.value.find { it.id == challengeId } ?: return Result.failure(Exception("চ্যালেঞ্জ পাওয়া যায়নি।"))
+        if (challenge.status !in setOf(
+                UserChallengeStatus.PENDING,
+                UserChallengeStatus.ACCEPTED,
+                UserChallengeStatus.ROOM_SET,
+                UserChallengeStatus.PROOF_SUBMITTED
+            )) return Result.failure(Exception("এই চ্যালেঞ্জ এখন Cancel করা যাবে না।"))
         val me = _currentUser.value.uid
-        if (me != challenge.challengerUid && me != challenge.opponentUid) {
-            return Result.failure(Exception("You are not part of this challenge."))
-        }
-
-        // If money was already locked after acceptance, refund both players on cancellation.
-        if (challenge.status == UserChallengeStatus.ACCEPTED || challenge.status == UserChallengeStatus.ROOM_SET) {
+        if (me != challenge.challengerUid && me != challenge.opponentUid) return Result.failure(Exception("আপনি এই চ্যালেঞ্জের অংশ নন।"))
+        if (challenge.status != UserChallengeStatus.PENDING) {
             applyWalletChange(challenge.challengerUid, CHALLENGE_STAKE)
             applyWalletChange(challenge.opponentUid, CHALLENGE_STAKE)
         }
-
-        val updated = challenge.copy(status = UserChallengeStatus.CANCELLED)
-        _userChallenges.value = _userChallenges.value.map { if (it.id == challengeId) updated else it }
-        FirebaseManager.syncUserChallengeToFirestore(updated)
-
+        _userChallenges.value = _userChallenges.value.map { if (it.id == challengeId) it.copy(status = UserChallengeStatus.CANCELLED) else it }
+        FirebaseManager.syncUserChallengeToFirestore(_userChallenges.value.first { it.id == challengeId })
         val otherUid = if (me == challenge.challengerUid) challenge.opponentUid else challenge.challengerUid
-        addNotification(otherUid, "1v1 Challenge Cancelled", "The challenge was cancelled and any locked stake was refunded.", "MATCH")
+        addNotification(otherUid, "1v1 Cancelled", "চ্যালেঞ্জ Cancel হয়েছে এবং লক করা ৫০ টাকা ফেরত দেওয়া হয়েছে।", "PLAYER_CHALLENGE")
         return Result.success(Unit)
     }
 
-    /** Opponent rejects the challenge. Nothing is deducted. */
-    fun rejectUserChallenge(challengeId: String) {
-        val challenge = _userChallenges.value.find { it.id == challengeId } ?: return
-        if (challenge.status != UserChallengeStatus.PENDING) return
+    fun rejectUserChallenge(challengeId: String): Result<Unit> {
+        val challenge = _userChallenges.value.find { it.id == challengeId } ?: return Result.failure(Exception("চ্যালেঞ্জ পাওয়া যায়নি।"))
+        if (challenge.status != UserChallengeStatus.PENDING) return Result.failure(Exception("এই চ্যালেঞ্জটি Pending নেই।"))
+        if (_currentUser.value.uid != challenge.opponentUid) return Result.failure(Exception("শুধু আমন্ত্রিত খেলোয়াড় Reject করতে পারবেন।"))
         val updated = challenge.copy(status = UserChallengeStatus.REJECTED)
         _userChallenges.value = _userChallenges.value.map { if (it.id == challengeId) updated else it }
         FirebaseManager.syncUserChallengeToFirestore(updated)
-        addNotification(
-            userId = challenge.challengerUid,
-            title = "Challenge Declined",
-            message = "${challenge.opponentName} declined your 1v1 challenge.",
-            type = "MATCH"
-        )
-    }
-
-    /** Step 3 — Challenger submits the game Room ID & password; becomes visible to the opponent. */
-    fun setUserChallengeRoom(challengeId: String, roomId: String, password: String): Result<Unit> {
-        val challenge = _userChallenges.value.find { it.id == challengeId }
-            ?: return Result.failure(Exception("Challenge not found."))
-        if (challenge.status != UserChallengeStatus.ACCEPTED) {
-            return Result.failure(Exception("Room can only be set after the challenge is accepted."))
-        }
-        if (_currentUser.value.uid != challenge.challengerUid) {
-            return Result.failure(Exception("Only the challenger can set the room credentials."))
-        }
-        if (roomId.isBlank() || password.isBlank()) {
-            return Result.failure(Exception("Room ID and password are both required."))
-        }
-        val updated = challenge.copy(roomId = roomId.trim(), roomPassword = password.trim(), status = UserChallengeStatus.ROOM_SET)
-        _userChallenges.value = _userChallenges.value.map { if (it.id == challengeId) updated else it }
-        FirebaseManager.syncUserChallengeToFirestore(updated)
-        addNotification(
-            userId = challenge.opponentUid,
-            title = "Room Ready — Join Now!",
-            message = "Room ID: $roomId | Password: $password",
-            type = "MATCH"
-        )
+        addNotification(challenge.challengerUid, "1v1 Reject হয়েছে", challenge.opponentName + " আপনার Challenge Reject করেছে।", "PLAYER_CHALLENGE")
         return Result.success(Unit)
     }
 
-    /** Step 4 — A player uploads their end-match screenshot as proof. */
-    fun submitUserChallengeProof(challengeId: String, proofUrl: String): Result<Unit> {
-        val challenge = _userChallenges.value.find { it.id == challengeId }
-            ?: return Result.failure(Exception("Challenge not found."))
-        if (challenge.status != UserChallengeStatus.ROOM_SET && challenge.status != UserChallengeStatus.PROOF_SUBMITTED) {
-            return Result.failure(Exception("Proof can only be submitted after the room is set."))
-        }
-        if (proofUrl.isBlank()) return Result.failure(Exception("Please upload a screenshot."))
-        val me = _currentUser.value.uid
+    fun setUserChallengeRoom(challengeId: String, roomId: String, password: String): Result<Unit> {
+        val challenge = _userChallenges.value.find { it.id == challengeId } ?: return Result.failure(Exception("চ্যালেঞ্জ পাওয়া যায়নি।"))
+        if (challenge.status != UserChallengeStatus.ACCEPTED) return Result.failure(Exception("Accept হওয়ার পরেই Room দেওয়া যাবে।"))
+        if (_currentUser.value.uid != challenge.challengerUid) return Result.failure(Exception("শুধু চ্যালেঞ্জ পাঠানো খেলোয়াড় Room দিতে পারবেন।"))
+        if (roomId.isBlank() || password.isBlank()) return Result.failure(Exception("Room ID এবং Password দুটোই দিতে হবে।"))
 
+        val acceptedAt = challenge.acceptedAtMillis.takeIf { it > 0L } ?: challenge.timestamp
+        if (System.currentTimeMillis() > acceptedAt + 20 * 60 * 1000L) return Result.failure(Exception("Room দেওয়ার ২০ মিনিটের সময় শেষ হয়ে গেছে।"))
+
+        val now = System.currentTimeMillis()
+        val updated = challenge.copy(
+            roomId = roomId.trim(),
+            roomPassword = password.trim(),
+            status = UserChallengeStatus.ROOM_SET,
+            roomSetAtMillis = now,
+            proofOpenAtMillis = now + 10 * 60 * 1000L,
+            deadlineAtMillis = challenge.deadlineAtMillis.takeIf { it > 0L } ?: (acceptedAt + 60 * 60 * 1000L)
+        )
+        _userChallenges.value = _userChallenges.value.map { if (it.id == challengeId) updated else it }
+        FirebaseManager.syncUserChallengeToFirestore(updated)
+        addNotification(challenge.opponentUid, "1v1 Room Ready", "Room ID ও Password এসেছে। ভুল হলে “Wrong Room” রিপোর্ট করুন।", "PLAYER_CHALLENGE")
+        return Result.success(Unit)
+    }
+
+    fun submitUserChallengeProof(challengeId: String, proofUrl: String): Result<Unit> {
+        val challenge = _userChallenges.value.find { it.id == challengeId } ?: return Result.failure(Exception("চ্যালেঞ্জ পাওয়া যায়নি।"))
+        if (challenge.status != UserChallengeStatus.ROOM_SET && challenge.status != UserChallengeStatus.PROOF_SUBMITTED) {
+            return Result.failure(Exception("Room সেট হওয়ার পরে Proof দেওয়া যাবে।"))
+        }
+        if (proofUrl.isBlank()) return Result.failure(Exception("একটি Screenshot upload করুন।"))
+        if (challenge.proofOpenAtMillis > 0L && System.currentTimeMillis() < challenge.proofOpenAtMillis) {
+            val minutes = ((challenge.proofOpenAtMillis - System.currentTimeMillis() + 59_999L) / 60_000L)
+            return Result.failure(Exception("Proof option " + minutes + " মিনিট পরে খুলবে।"))
+        }
+
+        val me = _currentUser.value.uid
         val updated = when (me) {
             challenge.challengerUid -> challenge.copy(challengerProofUrl = proofUrl)
             challenge.opponentUid -> challenge.copy(opponentProofUrl = proofUrl)
-            else -> return Result.failure(Exception("You are not part of this challenge."))
+            else -> return Result.failure(Exception("আপনি এই চ্যালেঞ্জের অংশ নন।"))
         }
-
-        // Once both proofs are in, move to UNDER_REVIEW for admin moderation
-        val bothSubmitted = updated.challengerProofUrl != null && updated.opponentProofUrl != null
-        val finalStatus = if (bothSubmitted) UserChallengeStatus.UNDER_REVIEW
-            else if (updated.status == UserChallengeStatus.ROOM_SET) UserChallengeStatus.PROOF_SUBMITTED
-            else updated.status
-        val toSave = updated.copy(status = finalStatus)
-
-        _userChallenges.value = _userChallenges.value.map { if (it.id == challengeId) toSave else it }
-        FirebaseManager.syncUserChallengeToFirestore(toSave)
+        val finalStatus = if (!updated.challengerProofUrl.isNullOrBlank() && !updated.opponentProofUrl.isNullOrBlank()) UserChallengeStatus.UNDER_REVIEW else UserChallengeStatus.PROOF_SUBMITTED
+        val saved = updated.copy(status = finalStatus)
+        _userChallenges.value = _userChallenges.value.map { if (it.id == challengeId) saved else it }
+        FirebaseManager.syncUserChallengeToFirestore(saved)
+        val otherUid = if (me == challenge.challengerUid) challenge.opponentUid else challenge.challengerUid
+        addNotification(otherUid, "1v1 Proof Update", "প্রতিপক্ষ Screenshot/Proof জমা দিয়েছে।", "PLAYER_CHALLENGE")
         return Result.success(Unit)
     }
 
-    /**
-     * Step 5 — Admin reviews both screenshots and declares the winner.
-     * Winner is credited CHALLENGE_WINNER_PAYOUT (৳85); loser gets 0. Stats are updated.
-     */
-    fun declareUserChallengeWinner(challengeId: String, winnerUid: String): Result<Unit> {
-        val challenge = _userChallenges.value.find { it.id == challengeId }
-            ?: return Result.failure(Exception("Challenge not found."))
-        if (challenge.status == UserChallengeStatus.COMPLETED) {
-            return Result.failure(Exception("This challenge is already completed."))
-        }
-        if (winnerUid != challenge.challengerUid && winnerUid != challenge.opponentUid) {
-            return Result.failure(Exception("Winner must be one of the two players."))
-        }
-        val loserUid = if (winnerUid == challenge.challengerUid) challenge.opponentUid else challenge.challengerUid
+    fun reportUserChallengeRoomInvalid(challengeId: String): Result<Unit> {
+        val challenge = _userChallenges.value.find { it.id == challengeId } ?: return Result.failure(Exception("চ্যালেঞ্জ পাওয়া যায়নি।"))
+        if (challenge.status != UserChallengeStatus.ROOM_SET && challenge.status != UserChallengeStatus.PROOF_SUBMITTED) return Result.failure(Exception("এই সময় Wrong Room রিপোর্ট করা যাবে না।"))
+        if (_currentUser.value.uid != challenge.opponentUid) return Result.failure(Exception("Wrong Room শুধু প্রতিপক্ষ রিপোর্ট করতে পারবে।"))
+        return declareUserChallengeWinner(challengeId, challenge.opponentUid, "প্রতিপক্ষ Wrong Room রিপোর্ট করেছে।")
+    }
+
+    fun declareUserChallengeWinner(challengeId: String, winnerUid: String, reason: String = "Admin result"): Result<Unit> {
+        val challenge = _userChallenges.value.find { it.id == challengeId } ?: return Result.failure(Exception("চ্যালেঞ্জ পাওয়া যায়নি।"))
+        if (challenge.status == UserChallengeStatus.COMPLETED || challenge.status == UserChallengeStatus.CANCELLED) return Result.failure(Exception("এই চ্যালেঞ্জ ইতিমধ্যে শেষ হয়েছে।"))
+        if (winnerUid != challenge.challengerUid && winnerUid != challenge.opponentUid) return Result.failure(Exception("Winner অবশ্যই অংশ নেওয়া একজন খেলোয়াড় হতে হবে।"))
+
         val winnerName = if (winnerUid == challenge.challengerUid) challenge.challengerName else challenge.opponentName
-
-        // Credit the winner (loser receives 0)
         applyWalletChange(winnerUid, CHALLENGE_WINNER_PAYOUT)
+        val loserUid = if (winnerUid == challenge.challengerUid) challenge.opponentUid else challenge.challengerUid
 
-        val updated = challenge.copy(
-            status = UserChallengeStatus.COMPLETED,
-            winnerUid = winnerUid,
-            winnerName = winnerName
-        )
+        val updated = challenge.copy(status = UserChallengeStatus.COMPLETED, winnerUid = winnerUid, winnerName = winnerName)
         _userChallenges.value = _userChallenges.value.map { if (it.id == challengeId) updated else it }
         FirebaseManager.syncUserChallengeToFirestore(updated)
 
-        // Update win/loss stats for both players
-        _users.value.forEach { u ->
-            when (u.uid) {
-                winnerUid -> upsertUser(u.copy(wins = u.wins + 1, matchesPlayed = u.matchesPlayed + 1, points = u.points + 3))
-                loserUid -> upsertUser(u.copy(losses = u.losses + 1, matchesPlayed = u.matchesPlayed + 1))
+        _users.value = _users.value.map { user ->
+            when (user.uid) {
+                winnerUid -> {
+                    val u = user.copy(wins = user.wins + 1, matchesPlayed = user.matchesPlayed + 1, points = user.points + 3)
+                    FirebaseManager.syncUserToFirestore(u)
+                    u
+                }
+                loserUid -> {
+                    val u = user.copy(losses = user.losses + 1, matchesPlayed = user.matchesPlayed + 1)
+                    FirebaseManager.syncUserToFirestore(u)
+                    u
+                }
+                else -> user
             }
         }
-
-        addNotification(winnerUid, "YOU WON! 🏆", "You won the 1v1 vs your opponent. ৳${CHALLENGE_WINNER_PAYOUT.toInt()} credited to your wallet.", "MATCH")
-        addNotification(loserUid, "Match Result", "You lost the 1v1 challenge. Better luck next time!", "MATCH")
-        logAdminAction("CHALLENGE_WINNER_DECLARED", "UserChallenge", challengeId, "Winner: $winnerName credited ৳${CHALLENGE_WINNER_PAYOUT.toInt()}")
+        addNotification(winnerUid, "1v1 ম্যাচ জয়", "আপনি জিতেছেন। ৮৫ টাকা Wallet-এ যোগ হয়েছে।", "PLAYER_CHALLENGE")
+        addNotification(loserUid, "1v1 ম্যাচ শেষ", "আপনি হেরে গেছেন।", "PLAYER_CHALLENGE")
+        logAdminAction("CHALLENGE_WINNER_DECLARED", "UserChallenge", challengeId, reason + " Winner=" + winnerUid)
         return Result.success(Unit)
     }
 
-    /** Admin: remove/clean up a challenge document. */
+    private fun refundIncompleteUserChallenge(challenge: UserChallenge, message: String) {
+        applyWalletChange(challenge.challengerUid, 30.0)
+        applyWalletChange(challenge.opponentUid, 30.0)
+        val updated = challenge.copy(status = UserChallengeStatus.COMPLETED, winnerUid = null, winnerName = null)
+        _userChallenges.value = _userChallenges.value.map { if (it.id == challenge.id) updated else it }
+        FirebaseManager.syncUserChallengeToFirestore(updated)
+        addNotification(challenge.challengerUid, "1v1 Disqualified", message, "PLAYER_CHALLENGE")
+        addNotification(challenge.opponentUid, "1v1 Disqualified", message, "PLAYER_CHALLENGE")
+    }
+
+    private fun refundIncompleteTeamChallenge(challenge: TeamChallenge, message: String) {
+        teamCaptain(challenge.challengerTeamId)?.let { applyWalletChange(it.uid, 30.0) }
+        teamCaptain(challenge.challengedTeamId)?.let { applyWalletChange(it.uid, 30.0) }
+        val updated = challenge.copy(status = ChallengeStatus.COMPLETED, winnerTeamId = null)
+        _challenges.value = _challenges.value.map { if (it.id == challenge.id) updated else it }
+        FirebaseManager.syncChallengeToFirestore(updated)
+        teamCaptain(challenge.challengerTeamId)?.let { addNotification(it.uid, "টিম ম্যাচ Disqualified", message, "TEAM_CHALLENGE") }
+        teamCaptain(challenge.challengedTeamId)?.let { addNotification(it.uid, "টিম ম্যাচ Disqualified", message, "TEAM_CHALLENGE") }
+    }
+
+    private fun processChallengeDeadlines() {
+        val now = System.currentTimeMillis()
+
+        _userChallenges.value.toList().forEach { challenge ->
+            if (challenge.status == UserChallengeStatus.ACCEPTED) {
+                val accepted = challenge.acceptedAtMillis.takeIf { it > 0L } ?: challenge.timestamp
+                if (now >= accepted + 20 * 60 * 1000L) {
+                    declareUserChallengeWinner(challenge.id, challenge.opponentUid, "২০ মিনিটে Challenger Room দিতে পারেনি — Opponent auto win.")
+                }
+            } else if (challenge.status == UserChallengeStatus.ROOM_SET || challenge.status == UserChallengeStatus.PROOF_SUBMITTED) {
+                if (!challenge.challengerProofUrl.isNullOrBlank() && !challenge.opponentProofUrl.isNullOrBlank()) return@forEach
+                val deadline = challenge.deadlineAtMillis.takeIf { it > 0L } ?: (challenge.acceptedAtMillis.takeIf { it > 0L } ?: challenge.timestamp) + 60 * 60 * 1000L
+                if (now >= deadline) {
+                    when {
+                        !challenge.challengerProofUrl.isNullOrBlank() -> declareUserChallengeWinner(challenge.id, challenge.challengerUid, "Opponent Proof দেয়নি — auto win.")
+                        !challenge.opponentProofUrl.isNullOrBlank() -> declareUserChallengeWinner(challenge.id, challenge.opponentUid, "Challenger Proof দেয়নি — auto win.")
+                        else -> refundIncompleteUserChallenge(challenge, "১ ঘণ্টার মধ্যে কেউ Proof দেয়নি। দুজনেই Disqualified; ২০ টাকা fee রেখে ৩০ টাকা করে ফেরত দেওয়া হয়েছে।")
+                    }
+                }
+            }
+        }
+
+        _challenges.value.toList().forEach { challenge ->
+            if (challenge.status == ChallengeStatus.ACCEPTED) {
+                val accepted = challenge.acceptedAtMillis.takeIf { it > 0L } ?: challenge.timestamp
+                if (now >= accepted + 20 * 60 * 1000L) {
+                    declareTeamChallengeWinner(challenge.id, challenge.challengedTeamId, "২০ মিনিটে Challenger Team Room দিতে পারেনি — Opponent auto win.")
+                }
+            } else if (challenge.status == ChallengeStatus.ROOM_SET || challenge.status == ChallengeStatus.PROOF_SUBMITTED) {
+                if (!challenge.challengerProofUrl.isNullOrBlank() && !challenge.challengedProofUrl.isNullOrBlank()) return@forEach
+                val deadline = challenge.deadlineAtMillis.takeIf { it > 0L } ?: (challenge.acceptedAtMillis.takeIf { it > 0L } ?: challenge.timestamp) + 60 * 60 * 1000L
+                if (now >= deadline) {
+                    when {
+                        !challenge.challengerProofUrl.isNullOrBlank() -> declareTeamChallengeWinner(challenge.id, challenge.challengerTeamId, "Opponent Team Proof দেয়নি — auto win.")
+                        !challenge.challengedProofUrl.isNullOrBlank() -> declareTeamChallengeWinner(challenge.id, challenge.challengedTeamId, "Challenger Team Proof দেয়নি — auto win.")
+                        else -> refundIncompleteTeamChallenge(challenge, "১ ঘণ্টার মধ্যে কোনো Team Proof আসেনি। দুপক্ষই Disqualified; ২০ টাকা fee রেখে ৩০ টাকা করে ফেরত দেওয়া হয়েছে।")
+                    }
+                }
+            }
+        }
+    }
+
     fun deleteUserChallenge(challengeId: String) {
         _userChallenges.value = _userChallenges.value.filter { it.id != challengeId }
         FirebaseManager.deleteUserChallenge(challengeId)
@@ -1289,13 +1398,18 @@ object TournamentRepository {
     fun markNotificationsAsRead() {
         val uid = _currentUser.value.uid
         _notifications.value = _notifications.value.map {
-            if (it.userId == uid) it.copy(isRead = true) else it
+            if (it.userId == uid) {
+                val updated = it.copy(isRead = true)
+                FirebaseManager.updateNotificationReadState(updated.id, true)
+                updated
+            } else it
         }
     }
 
     private fun addNotification(userId: String, title: String, message: String, type: String) {
         val item = NotificationItem(userId = userId, title = title, message = message, type = type)
         _notifications.value = listOf(item) + _notifications.value
+        FirebaseManager.syncNotificationToFirestore(item)
     }
 
     private fun logAdminAction(action: String, targetType: String, targetId: String, details: String) {
@@ -1314,6 +1428,8 @@ object TournamentRepository {
     // Cron / Worker Automation Engine
     fun runCronCycle(): String {
         var actionsDone = 0
+
+        processChallengeDeadlines()
 
         // 1. Scan tournaments in REGISTRATION: auto-seed if capacity full
         val tours = _tournaments.value

@@ -56,4 +56,5 @@ object StorageManager {
     fun getTeamBannerPath(teamId: String) = "team_banners/$teamId.jpg"
     fun getChallengePicPath(challengeId: String, userId: String) = "challenge_proofs/${challengeId}_${userId}.jpg"
     fun getWelcomePopupPath() = "welcome_popup/banner.jpg"
+    fun getTournamentGameLogoPath(tournamentKey: String) = "tournament_game_logos/$tournamentKey.jpg"
 }

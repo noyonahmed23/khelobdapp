@@ -578,15 +578,50 @@ fun UserChallengeCard(
                 // Opponent can Accept / Reject
                 UserChallengeStatus.PENDING -> {
                     if (isOpponent) {
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OutlinedButton(onClick = onReject, shape = RectangleShape, border = borderStroke(1.dp, EsportsRed), modifier = Modifier.weight(1f).height(40.dp)) { Text("REJECT", color = EsportsRed, fontWeight = FontWeight.Black, fontSize = 12.sp) }
-                            Button(onClick = onAccept, shape = RectangleShape, colors = ButtonDefaults.buttonColors(containerColor = KheloGreen), modifier = Modifier.weight(1f).height(40.dp)) { Text("ACCEPT", color = Color.White, fontWeight = FontWeight.Black, fontSize = 12.sp) }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedButton(
+                                onClick = onReject,
+                                shape = RectangleShape,
+                                border = borderStroke(1.dp, EsportsRed),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = EsportsRed),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(34.dp)
+                            ) {
+                                Text("Reject", fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                            }
+                            Button(
+                                onClick = onAccept,
+                                shape = RectangleShape,
+                                colors = ButtonDefaults.buttonColors(containerColor = KheloGreen),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(34.dp)
+                            ) {
+                                Text("Accept", color = DarkBg, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                            }
                         }
                     } else {
-                        InfoRow(Icons.Default.HourglassEmpty, EsportsOrange, "Waiting for " + challenge.opponentName + " to respond...")
-                        OutlinedButton(onClick = onCancel, shape = RectangleShape, border = borderStroke(1.dp, EsportsRed), modifier = Modifier.fillMaxWidth().height(38.dp)) { Text("CANCEL CHALLENGE", color = EsportsRed, fontWeight = FontWeight.Black, fontSize = 12.sp) }
+                        // Challenger is waiting
+                        InfoRow(
+                            icon = Icons.Default.HourglassEmpty,
+                            tint = EsportsOrange,
+                            text = "Waiting for ${challenge.opponentName} to respond..."
+                        )
+                        OutlinedButton(
+                            onClick = onCancel,
+                            shape = RectangleShape,
+                            border = borderStroke(1.dp, EsportsRed),
+                            modifier = Modifier.fillMaxWidth().height(38.dp)
+                        ) {
+                            Text("CANCEL CHALLENGE", color = EsportsRed, fontWeight = FontWeight.Black, fontSize = 12.sp)
+                        }
                     }
                 }
+
                 // Challenger sets room credentials; opponent waits
                 UserChallengeStatus.ACCEPTED -> {
                     if (isChallenger) {
@@ -647,7 +682,9 @@ fun UserChallengeCard(
                             shape = RectangleShape,
                             border = borderStroke(1.dp, EsportsRed),
                             modifier = Modifier.fillMaxWidth().height(38.dp)
-                        ) { Text("CANCEL CHALLENGE", color = EsportsRed, fontWeight = FontWeight.Black, fontSize = 12.sp) }
+                        ) {
+                            Text("CANCEL CHALLENGE", color = EsportsRed, fontWeight = FontWeight.Black, fontSize = 12.sp)
+                        }
                     } else {
                         InfoRow(
                             icon = Icons.Default.HourglassEmpty,
@@ -697,7 +734,14 @@ fun UserChallengeCard(
                         challenge.opponentProofUrl != null
                     }
 
-                    OutlinedButton(onClick = onCancel, shape = RectangleShape, border = borderStroke(1.dp, EsportsRed), modifier = Modifier.fillMaxWidth().height(38.dp)) { Text("CANCEL CHALLENGE", color = EsportsRed, fontWeight = FontWeight.Black, fontSize = 12.sp) }
+                    OutlinedButton(
+                        onClick = onCancel,
+                        shape = RectangleShape,
+                        border = borderStroke(1.dp, EsportsRed),
+                        modifier = Modifier.fillMaxWidth().height(38.dp)
+                    ) {
+                        Text("CANCEL CHALLENGE", color = EsportsRed, fontWeight = FontWeight.Black, fontSize = 12.sp)
+                    }
 
                     if (hasSubmittedProof) {
                         InfoRow(
@@ -1182,3 +1226,65 @@ fun PlayerListItem(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable(onClick = onViewProfile)
+            ) {
+                Avatar(imageUrl = user.profilePictureUrl, label = user.username, size = 34.dp, fontSize = 11.sp)
+                Spacer(modifier = Modifier.width(10.dp))
+                Column {
+                    Text(
+                        text = user.username,
+                        color = TextPrimary,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp
+                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            text = "UID: ${user.inGameUid.ifBlank { "N/A" }}",
+                            color = TextMuted,
+                            fontSize = 9.sp
+                        )
+                        if (user.teamName != null) {
+                            Surface(shape = RectangleShape, color = DarkSurfaceElevated) {
+                                Text(
+                                    text = user.teamName,
+                                    color = EsportsCyan,
+                                    fontSize = 8.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = "${user.wins}W / ${user.losses}L",
+                    color = TextSecondary,
+                    fontSize = 9.sp
+                )
+                Spacer(modifier = Modifier.height(3.dp))
+                Button(
+                    onClick = onChallenge,
+                    shape = RectangleShape,
+                    colors = ButtonDefaults.buttonColors(containerColor = KheloGreen),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                    modifier = Modifier.height(26.dp)
+                ) {
+                    Text("Challenge", color = DarkBg, fontSize = 9.sp, fontWeight = FontWeight.Black)
+                }
+            }
+        }
+    }
+}

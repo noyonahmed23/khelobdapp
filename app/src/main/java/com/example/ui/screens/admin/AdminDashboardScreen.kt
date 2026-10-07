@@ -2615,7 +2615,7 @@ fun CreateTournamentDialog(
     var logoError by remember { mutableStateOf<String?>(null) }
     var uploadingLogo by remember { mutableStateOf(false) }
 
-    val logoKey = remember { "draft_\${System.currentTimeMillis()}" }
+    val logoKey = remember { "draft_${System.currentTimeMillis()}" }
     val pickLogo = rememberImagePicker(
         storagePath = StorageManager.getTournamentGameLogoPath(logoKey),
         onUploaded = {

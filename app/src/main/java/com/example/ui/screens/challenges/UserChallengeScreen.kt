@@ -95,6 +95,7 @@ fun UserChallengeScreen(
                     onReject = { handle(onRejectChallenge(challenge.id)) },
                     onCancel = { handle(onCancelChallenge(challenge.id)) },
                     onSetRoom = { room, pass -> handle(onSetRoomCredentials(challenge.id, room, pass)) },
+                    onReportWrongRoom = { handle(onReportWrongRoom(challenge.id)) },
                     onProof = { url -> handle(onSubmitProof(challenge.id, url)) }
                 )
             }
@@ -175,6 +176,7 @@ private fun PlayerChallengeCard(
     onReject: () -> Unit,
     onCancel: () -> Unit,
     onSetRoom: (String, String) -> Unit,
+    onReportWrongRoom: (String) -> Result<Unit>,
     onProof: (String) -> Unit
 ) {
     var room by remember(challenge.id, challenge.roomId) { mutableStateOf(challenge.roomId ?: "") }

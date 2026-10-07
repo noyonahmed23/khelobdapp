@@ -1,233 +1,274 @@
 import com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy
 
 plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.google.devtools.ksp)
-    alias(libs.plugins.secrets)
-    alias(libs.plugins.google.services)
+alias(libs.plugins.android.application)
+alias(libs.plugins.kotlin.compose)
+alias(libs.plugins.google.devtools.ksp)
+alias(libs.plugins.secrets)
+alias(libs.plugins.google.services)
 }
 
 android {
-    namespace = "com.example"
+namespace = "com.example"
 
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
+```
+compileSdk {
+    version = release(36) {
+        minorApiLevel = 1
+    }
+}
+
+defaultConfig {
+    minSdk = 24
+    targetSdk = 36
+    versionCode = 1
+    versionName = "1.0"
+
+    testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+}
+
+// ------------------------------------------------------------
+// App flavors
+// ------------------------------------------------------------
+flavorDimensions += "app"
+
+productFlavors {
+    create("user") {
+        dimension = "app"
+        applicationId = "com.khelobd.user"
+
+        resValue(
+            "string",
+            "app_name",
+            "Khelo BD"
+        )
+
+        buildConfigField(
+            "boolean",
+            "ADMIN_APP",
+            "false"
+        )
     }
 
-    defaultConfig {
-        minSdk = 24
-        targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+    create("admin") {
+        dimension = "app"
+        applicationId = "com.khelobd.admin"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        resValue(
+            "string",
+            "app_name",
+            "Khelo BD Admin"
+        )
+
+        buildConfigField(
+            "boolean",
+            "ADMIN_APP",
+            "true"
+        )
+    }
+}
+
+// ------------------------------------------------------------
+// Release signing
+// ------------------------------------------------------------
+signingConfigs {
+    create("release") {
+        val keystorePath =
+            System.getenv("KEYSTORE_PATH")
+                ?: "${rootDir}/my-upload-key.jks"
+
+        storeFile = file(keystorePath)
+        storePassword = System.getenv("STORE_PASSWORD")
+        keyAlias = System.getenv("KEY_ALIAS") ?: "upload"
+        keyPassword = System.getenv("KEY_PASSWORD")
+    }
+}
+
+// ------------------------------------------------------------
+// Build types
+// ------------------------------------------------------------
+buildTypes {
+    release {
+        isCrunchPngs = false
+        isMinifyEnabled = false
+
+        proguardFiles(
+            getDefaultProguardFile("proguard-android-optimize.txt"),
+            "proguard-rules.pro"
+        )
+
+        signingConfig = signingConfigs.getByName("release")
     }
 
-    // Two apps from the same codebase
-    flavorDimensions += "app"
-
-    productFlavors {
-        create("user") {
-            dimension = "app"
-            applicationId = "com.khelobd.user"
-
-            resValue(
-                "string",
-                "app_name",
-                "Khelo BD"
-            )
-
-            buildConfigField(
-                "boolean",
-                "ADMIN_APP",
-                "false"
-            )
-        }
-
-        create("admin") {
-            dimension = "app"
-            applicationId = "com.khelobd.admin"
-
-            resValue(
-                "string",
-                "app_name",
-                "Khelo BD Admin"
-            )
-
-            buildConfigField(
-                "boolean",
-                "ADMIN_APP",
-                "true"
-            )
-        }
+    // Do NOT use a custom debug.keystore.
+    // Android/Gradle will automatically use its standard debug signing key.
+    debug {
+        isMinifyEnabled = false
     }
+}
 
-    signingConfigs {
-        create("release") {
-            val keystorePath =
-                System.getenv("KEYSTORE_PATH")
-                    ?: "${rootDir}/my-upload-key.jks"
+// ------------------------------------------------------------
+// Java 17
+// ------------------------------------------------------------
+compileOptions {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
 
-            storeFile = file(keystorePath)
-            storePassword = System.getenv("STORE_PASSWORD")
-            keyAlias = "upload"
-            keyPassword = System.getenv("KEY_PASSWORD")
-        }
+// ------------------------------------------------------------
+// Build features
+// ------------------------------------------------------------
+buildFeatures {
+    compose = true
+    buildConfig = true
+    resValues = true
+}
 
-        create("debugConfig") {
-            storeFile = file("${rootDir}/debug.keystore")
-            storePassword = "android"
-            keyAlias = "androiddebugkey"
-            keyPassword = "android"
-        }
+// ------------------------------------------------------------
+// Tests
+// ------------------------------------------------------------
+testOptions {
+    unitTests {
+        isIncludeAndroidResources = true
+        isReturnDefaultValues = true
     }
+}
 
-    buildTypes {
-        release {
-            isCrunchPngs = false
-            isMinifyEnabled = false
+// ------------------------------------------------------------
+// Dependency info
+// ------------------------------------------------------------
+dependenciesInfo {
+    includeInApk = false
+    includeInBundle = true
+}
+```
 
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-
-            signingConfig = signingConfigs.getByName("release")
-        }
-
-        debug {
-            signingConfig = signingConfigs.getByName("debugConfig")
-        }
-    }
-
-    // JDK 17
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    buildFeatures {
-        compose = true
-        buildConfig = true
-        resValues = true
-    }
-
-    testOptions {
-        unitTests {
-            isIncludeAndroidResources = true
-            isReturnDefaultValues = true
-        }
-    }
-
-    dependenciesInfo {
-        includeInApk = false
-        includeInBundle = true
-    }
 }
 
 /*
- * Build both release APKs and copy them with final names.
- *
- * user  -> build_apks/khelobd.apk
- * admin -> build_apks/khelobdadmin.apk
- */
-tasks.register<Copy>("collectReleaseApks") {
-    dependsOn(
-        "assembleUserRelease",
-        "assembleAdminRelease"
-    )
 
-    from(layout.buildDirectory.dir("outputs/apk/user/release")) {
-        include("*.apk")
-        rename { "khelobd.apk" }
-    }
+* Build both release APKs and copy them with final names.
+*
+* user  -> build_apks/khelobd.apk
+* admin -> build_apks/khelobdadmin.apk
+  */
+  tasks.register<Copy>("collectReleaseApks") {
+  dependsOn(
+  "assembleUserRelease",
+  "assembleAdminRelease"
+  )
 
-    from(layout.buildDirectory.dir("outputs/apk/admin/release")) {
-        include("*.apk")
-        rename { "khelobdadmin.apk" }
-    }
+  from(layout.buildDirectory.dir("outputs/apk/user/release")) {
+  include("*.apk")
+  rename { "khelobd.apk" }
+  }
 
-    into(
-        rootProject.layout.projectDirectory.dir("build_apks")
-    )
-}
+  from(layout.buildDirectory.dir("outputs/apk/admin/release")) {
+  include("*.apk")
+  rename { "khelobdadmin.apk" }
+  }
 
+  into(
+  rootProject.layout.projectDirectory.dir("build_apks")
+  )
+  }
+
+// ------------------------------------------------------------
+// Secrets Gradle Plugin
+//
+// IMPORTANT:
+// Do NOT use .env / .env.example here.
+//
+// Root project files:
+//   secrets.properties          -> private/local secrets
+//   local.defaults.properties  -> safe fallback committed to Git
+// ------------------------------------------------------------
 secrets {
-    propertiesFileName = ".env"
-    defaultPropertiesFileName = ".env.example"
-    ignoreList.add("FIREBASE_APPCHECK_DEBUG_TOKEN")
+propertiesFileName = "secrets.properties"
+defaultPropertiesFileName = "local.defaults.properties"
+
+```
+ignoreList.add("FIREBASE_APPCHECK_DEBUG_TOKEN")
+```
+
 }
 
+// ------------------------------------------------------------
+// Google Services
+// ------------------------------------------------------------
 googleServices {
-    missingGoogleServicesStrategy =
-        MissingGoogleServicesStrategy.WARN
+missingGoogleServicesStrategy =
+MissingGoogleServicesStrategy.WARN
 }
 
+// ------------------------------------------------------------
+// Dependencies
+// ------------------------------------------------------------
 dependencies {
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(platform(libs.firebase.bom))
+implementation(platform(libs.androidx.compose.bom))
+implementation(platform(libs.firebase.bom))
 
-    implementation(libs.androidx.activity.compose)
+```
+implementation(libs.androidx.activity.compose)
 
-    implementation(libs.androidx.compose.material.icons.core)
-    implementation(libs.androidx.compose.material.icons.extended)
-    implementation(libs.androidx.compose.material3)
-    implementation(libs.androidx.compose.ui)
-    implementation(libs.androidx.compose.ui.graphics)
-    implementation(libs.androidx.compose.ui.tooling.preview)
+implementation(libs.androidx.compose.material.icons.core)
+implementation(libs.androidx.compose.material.icons.extended)
+implementation(libs.androidx.compose.material3)
+implementation(libs.androidx.compose.ui)
+implementation(libs.androidx.compose.ui.graphics)
+implementation(libs.androidx.compose.ui.tooling.preview)
 
-    implementation(libs.androidx.core.ktx)
+implementation(libs.androidx.core.ktx)
 
-    implementation(libs.androidx.lifecycle.runtime.compose)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.lifecycle.viewmodel.compose)
+implementation(libs.androidx.lifecycle.runtime.compose)
+implementation(libs.androidx.lifecycle.runtime.ktx)
+implementation(libs.androidx.lifecycle.viewmodel.compose)
 
-    implementation(libs.androidx.navigation.compose)
+implementation(libs.androidx.navigation.compose)
 
-    implementation(libs.androidx.room.ktx)
-    implementation(libs.androidx.room.runtime)
+implementation(libs.androidx.room.ktx)
+implementation(libs.androidx.room.runtime)
 
-    implementation(libs.coil.compose)
+implementation(libs.coil.compose)
 
-    implementation(libs.converter.moshi)
+implementation(libs.converter.moshi)
 
-    implementation(libs.firebase.ai)
-    implementation(libs.firebase.firestore)
-    implementation(libs.firebase.auth)
-    implementation(libs.firebase.storage)
-    implementation(libs.firebase.appcheck.recaptcha)
-    implementation(libs.firebase.appcheck.debug)
+implementation(libs.firebase.ai)
+implementation(libs.firebase.firestore)
+implementation(libs.firebase.auth)
+implementation(libs.firebase.storage)
+implementation(libs.firebase.appcheck.recaptcha)
+implementation(libs.firebase.appcheck.debug)
 
-    implementation(libs.kotlinx.coroutines.android)
-    implementation(libs.kotlinx.coroutines.core)
+implementation(libs.kotlinx.coroutines.android)
+implementation(libs.kotlinx.coroutines.core)
 
-    implementation(libs.logging.interceptor)
+implementation(libs.logging.interceptor)
 
-    implementation(libs.moshi.kotlin)
+implementation(libs.moshi.kotlin)
 
-    implementation(libs.okhttp)
+implementation(libs.okhttp)
 
-    implementation(libs.retrofit)
+implementation(libs.retrofit)
 
-    testImplementation(libs.androidx.compose.ui.test.junit4)
-    testImplementation(libs.androidx.core)
-    testImplementation(libs.androidx.junit)
-    testImplementation(libs.junit)
-    testImplementation(libs.kotlinx.coroutines.test)
-    testImplementation(libs.robolectric)
+testImplementation(libs.androidx.compose.ui.test.junit4)
+testImplementation(libs.androidx.core)
+testImplementation(libs.androidx.junit)
+testImplementation(libs.junit)
+testImplementation(libs.kotlinx.coroutines.test)
+testImplementation(libs.robolectric)
 
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.runner)
+androidTestImplementation(platform(libs.androidx.compose.bom))
+androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+androidTestImplementation(libs.androidx.espresso.core)
+androidTestImplementation(libs.androidx.junit)
+androidTestImplementation(libs.androidx.runner)
 
-    debugImplementation(libs.androidx.compose.ui.test.manifest)
-    debugImplementation(libs.androidx.compose.ui.tooling)
+debugImplementation(libs.androidx.compose.ui.test.manifest)
+debugImplementation(libs.androidx.compose.ui.tooling)
 
-    ksp(libs.androidx.room.compiler)
-    ksp(libs.moshi.kotlin.codegen)
+ksp(libs.androidx.room.compiler)
+ksp(libs.moshi.kotlin.codegen)
+```
+
 }

@@ -158,6 +158,7 @@ data class TeamChallenge(
     val stakeAmount: Double = 0.0,
     val scheduledTime: String = "Tomorrow, 08:00 PM",
     val status: ChallengeStatus = ChallengeStatus.PENDING,
+    val timestamp: Long = System.currentTimeMillis(),
     val acceptedAtMillis: Long = 0L,
     val roomSetAtMillis: Long = 0L,
     val proofOpenAtMillis: Long = 0L,

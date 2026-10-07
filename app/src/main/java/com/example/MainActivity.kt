@@ -374,6 +374,10 @@ fun KheloBDApp() {
                                         method,
                                         trxId
                                     )
+                                },
+                                onOpenDeposit = {
+                                    currentDestination = AppNavDestination.PROFILE
+                                    openDepositAfterNavigate = true
                                 }
                             )
                         }

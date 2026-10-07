@@ -20,10 +20,12 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Generate Gradle Wrapper 9.3.1
+    - name: Clean and Generate Fresh Gradle 9.3.1 Wrapper
       run: |
         sudo apt-get update
         sudo apt-get install -y gradle
+        # পুরোনো সব গ্র্যাডল ফাইল ও র‍্যাপার মুছে ফেলে একদম নতুন ও ফ্রেশ র‍্যাপার তৈরি করা
+        rm -rf gradlew gradlew.bat gradle/ app/gradle/
         gradle wrapper --gradle-version 9.3.1
         chmod +x gradlew
 

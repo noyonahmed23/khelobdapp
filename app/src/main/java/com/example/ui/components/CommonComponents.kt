@@ -28,6 +28,66 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+fun BanglaAlertDialog(
+    title: String = "বার্তা",
+    message: String,
+    confirmText: String = "ঠিক আছে",
+    onConfirm: () -> Unit
+) {
+    androidx.compose.ui.window.Dialog(onDismissRequest = onConfirm) {
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = DarkSurfaceElevated,
+            shape = RectangleShape,
+            border = borderStroke(1.dp, EsportsOrange)
+        ) {
+            Column(
+                modifier = Modifier.padding(18.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(title, color = TextPrimary, fontWeight = FontWeight.Black, fontSize = 19.sp)
+                Text(message, color = TextSecondary, fontSize = 15.sp, lineHeight = 21.sp)
+                Button(
+                    onClick = onConfirm,
+                    modifier = Modifier.fillMaxWidth().height(46.dp),
+                    shape = RectangleShape,
+                    colors = ButtonDefaults.buttonColors(containerColor = KheloGreen)
+                ) {
+                    Text(confirmText, color = Color.White, fontWeight = FontWeight.Black, fontSize = 15.sp)
+                }
+            }
+        }
+    }
+}
+
+fun banglaErrorMessage(raw: String): String = when {
+    raw.contains("Insufficient", ignoreCase = true) ||
+        raw.contains("does not have enough balance", ignoreCase = true) ->
+        "আপনার অ্যাকাউন্টে পর্যাপ্ত ব্যালেন্স নেই। আগে ডিপোজিট করুন।"
+    raw.contains("already registered", ignoreCase = true) ->
+        "আপনি এই টুর্নামেন্টে আগেই রেজিস্টার করেছেন।"
+    raw.contains("Registration is closed", ignoreCase = true) ->
+        "এই টুর্নামেন্টের রেজিস্ট্রেশন এখন বন্ধ।"
+    raw.contains("already have an open challenge", ignoreCase = true) ||
+        raw.contains("active challenge already exists", ignoreCase = true) ->
+        "এই প্রতিপক্ষের সাথে একটি চলমান চ্যালেঞ্জ আগে থেকেই আছে।"
+    raw.contains("Only the", ignoreCase = true) ->
+        "এই কাজটি শুধু নির্ধারিত ক্যাপ্টেন/খেলোয়াড় করতে পারবেন।"
+    raw.contains("not live", ignoreCase = true) ->
+        "এই টিমটি এখন লাইভ নেই, তাই চ্যালেঞ্জ করা যাবে না।"
+    raw.contains("Room ID", ignoreCase = true) && raw.contains("required", ignoreCase = true) ->
+        "রুম আইডি এবং পাসওয়ার্ড দুটিই দিতে হবে।"
+    raw.contains("Proof can only", ignoreCase = true) ||
+        raw.contains("Proof is available", ignoreCase = true) ->
+        "রুম দেওয়ার ১০ মিনিট পরে প্রুফ/স্ক্রিনশট জমা দেওয়া যাবে।"
+    raw.contains("You cannot challenge yourself", ignoreCase = true) ->
+        "নিজেকে চ্যালেঞ্জ করা যাবে না।"
+    raw.contains("team member", ignoreCase = true) ->
+        "নিজের টিমের সদস্যকে চ্যালেঞ্জ করা যাবে না।"
+    else -> raw
+}
+
+@Composable
 fun KheloTopBar(
     currentUser: UserProfile,
     unreadNotificationsCount: Int,
@@ -424,9 +484,19 @@ fun rememberImagePicker(
         if (uri != null) {
             onLoading(true)
             scope.launch {
-                val url = StorageManager.uploadImage(uri, storagePath)
-                onLoading(false)
-                if (url != null) onUploaded(url) else onError("Image upload failed. Please try again.")
+                try {
+                    val url = StorageManager.uploadImage(uri, storagePath)
+                    if (url != null) {
+                        onUploaded(url)
+                    } else {
+                        onError("ছবি আপলোড করা যায়নি। Firebase Storage চালু ও Storage Rules publish করা আছে কি না দেখুন।")
+                    }
+                } catch (e: Exception) {
+                    val detail = e.message?.takeIf { it.isNotBlank() } ?: "অজানা সমস্যা"
+                    onError("ছবি আপলোড ব্যর্থ: $detail")
+                } finally {
+                    onLoading(false)
+                }
             }
         }
     }

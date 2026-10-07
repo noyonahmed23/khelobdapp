@@ -95,6 +95,7 @@ fun KheloBDApp() {
     var showRoleSwitchDialog by remember { mutableStateOf(false) }
     var dismissedWelcomePopup by remember { mutableStateOf(false) }
     var viewingProfile by remember { mutableStateOf<UserProfile?>(null) }
+    var openDepositAfterNavigate by remember { mutableStateOf(false) }
 
     var selectedTournamentFromHome by remember { mutableStateOf<Tournament?>(null) }
     var showRegisterDialogFromHome by remember { mutableStateOf(false) }
@@ -173,7 +174,7 @@ fun KheloBDApp() {
 
                         NavigationBarItem(
                             selected = isSelected,
-                            onClick = { currentDestination = destination },
+                            onClick = { currentDestination = destination; if (destination != AppNavDestination.PROFILE) openDepositAfterNavigate = false },
                             icon = {
                                 Icon(
                                     imageVector = if (isSelected) {
@@ -188,7 +189,7 @@ fun KheloBDApp() {
                             label = {
                                 Text(
                                     text = destination.title,
-                                    fontSize = 9.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = if (isSelected) {
                                         FontWeight.Black
                                     } else {
@@ -401,30 +402,27 @@ fun KheloBDApp() {
                                 onSendChallenge = { uid, name ->
                                     TournamentRepository.sendUserChallenge(uid, name)
                                 },
-                                onAcceptChallenge = {
-                                    TournamentRepository.acceptUserChallenge(it)
+                                onAcceptChallenge = { id ->
+                                    TournamentRepository.acceptUserChallenge(id)
                                 },
-                                onRejectChallenge = {
-                                    TournamentRepository.rejectUserChallenge(it)
+                                onRejectChallenge = { id ->
+                                    TournamentRepository.rejectUserChallenge(id)
                                 },
-                                onCancelChallenge = {
-                                    TournamentRepository.cancelUserChallenge(it)
+                                onCancelChallenge = { id ->
+                                    TournamentRepository.cancelUserChallenge(id)
                                 },
                                 onSetRoomCredentials = { id, roomId, pass ->
-                                    TournamentRepository.setUserChallengeRoom(
-                                        id,
-                                        roomId,
-                                        pass
-                                    )
+                                    TournamentRepository.setUserChallengeRoom(id, roomId, pass)
                                 },
                                 onSubmitProof = { id, proof ->
-                                    TournamentRepository.submitUserChallengeProof(
-                                        id,
-                                        proof
-                                    )
+                                    TournamentRepository.submitUserChallengeProof(id, proof)
                                 },
-                                onViewProfile = {
-                                    user -> viewingProfile = user
+                                onOpenDeposit = {
+                                    currentDestination = AppNavDestination.PROFILE
+                                    openDepositAfterNavigate = true
+                                },
+                                onViewProfile = { user ->
+                                    viewingProfile = user
                                 }
                             )
                         }
@@ -449,20 +447,22 @@ fun KheloBDApp() {
                                     )
                                 },
                                 onChallengeTeam = { targetId, game, stake ->
-                                    TournamentRepository.challengeTeam(
-                                        targetId,
-                                        game,
-                                        stake
-                                    )
+                                    TournamentRepository.challengeTeam(targetId, game, stake)
                                 },
-                                onAcceptChallenge = {
-                                    TournamentRepository.acceptChallenge(it)
+                                onAcceptChallenge = { id ->
+                                    TournamentRepository.acceptChallenge(id)
                                 },
                                 onSetChallengeRoom = { id, roomId, pass ->
                                     TournamentRepository.setTeamChallengeRoom(id, roomId, pass)
                                 },
-                                onCancelChallenge = {
-                                    TournamentRepository.cancelChallenge(it)
+                                onSubmitProof = { id, proof ->
+                                    TournamentRepository.submitTeamChallengeProof(id, proof)
+                                },
+                                onReportWrongRoom = { id ->
+                                    TournamentRepository.reportTeamChallengeRoomInvalid(id)
+                                },
+                                onCancelChallenge = { id ->
+                                    TournamentRepository.cancelChallenge(id)
                                 },
                                 onSendJoinRequest = {
                                     TournamentRepository.sendJoinRequest(it)
@@ -486,6 +486,13 @@ fun KheloBDApp() {
                                         teamId,
                                         userId
                                     )
+                                },
+                                onOpenDeposit = {
+                                    currentDestination = AppNavDestination.PROFILE
+                                    openDepositAfterNavigate = true
+                                },
+                                onViewProfile = { user ->
+                                    viewingProfile = user
                                 }
                             )
                         }
@@ -500,6 +507,7 @@ fun KheloBDApp() {
                         AppNavDestination.PROFILE -> {
                             ProfileScreen(
                                 currentUser = currentUser,
+                                initialShowDeposit = openDepositAfterNavigate,
                                 payments = payments,
                                 settings = settings,
                                 allUsersRanking = allUsers,
@@ -576,11 +584,13 @@ fun KheloBDApp() {
             },
             onChallengeClick = { opponentUid, opponentName ->
                 viewingProfile = null
-                TournamentRepository.sendUserChallenge(
-                    opponentUid,
-                    opponentName
-                )
-                currentDestination = AppNavDestination.CHALLENGES
+                val result = TournamentRepository.sendUserChallenge(opponentUid, opponentName)
+                if (result.isFailure && result.exceptionOrNull()?.message?.contains("ব্যালেন্স নেই", true) == true) {
+                    currentDestination = AppNavDestination.PROFILE
+                    openDepositAfterNavigate = true
+                } else {
+                    currentDestination = AppNavDestination.CHALLENGES
+                }
             }
         )
     }
@@ -632,6 +642,12 @@ fun KheloBDApp() {
                 if (result.isSuccess) {
                     showRegisterDialogFromHome = false
                     selectedTournamentFromHome = null
+                } else if (result.exceptionOrNull()?.message?.contains("Insufficient wallet", true) == true ||
+                    result.exceptionOrNull()?.message?.contains("deposit", true) == true) {
+                    showRegisterDialogFromHome = false
+                    selectedTournamentFromHome = null
+                    currentDestination = AppNavDestination.PROFILE
+                    openDepositAfterNavigate = true
                 }
 
                 result
@@ -641,11 +657,14 @@ fun KheloBDApp() {
 
     if (showNotificationsDialog) {
         NotificationsDialog(
-            notifications = notifications.filter {
-                it.userId == currentUser.uid
-            },
-            onDismiss = {
+            notifications = notifications.filter { it.userId == currentUser.uid },
+            onDismiss = { showNotificationsDialog = false },
+            onNotificationClick = { item ->
                 showNotificationsDialog = false
+                when (item.type) {
+                    "PLAYER_CHALLENGE" -> currentDestination = AppNavDestination.CHALLENGES
+                    "TEAM_CHALLENGE" -> currentDestination = AppNavDestination.TEAMS
+                }
             }
         )
     }

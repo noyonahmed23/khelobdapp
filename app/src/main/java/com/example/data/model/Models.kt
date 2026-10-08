@@ -31,7 +31,9 @@ data class UserProfile(
     val referralCode: String = "KHELO-${UUID.randomUUID().toString().take(6).uppercase()}",
     val referredBy: String? = null,
     val referralEarnings: Double = 0.0,
-    val isBanned: Boolean = false
+    val isBanned: Boolean = false,
+    val isOnline: Boolean = false,
+    val lastActiveAt: Long = System.currentTimeMillis()
 ) {
     val winRate: Float
         get() = if (matchesPlayed > 0) (wins.toFloat() / matchesPlayed) * 100f else 0f
@@ -52,10 +54,14 @@ data class Tournament(
     val id: String = UUID.randomUUID().toString(),
     val title: String,
     val game: String,
+    val mode: String = "Solo BR",
     val bannerUrl: String = "",
     val description: String,
     val entryFee: Double = 0.0, // 0 for Free
     val prizePool: Double = 5000.0, // in BDT
+    val firstPrize: Double = 3000.0,
+    val secondPrize: Double = 1500.0,
+    val thirdPrize: Double = 500.0,
     val maxParticipants: Int = 16,
     val registeredCount: Int = 0,
     val registrationDeadline: String = "Today, 08:00 PM",
@@ -67,14 +73,12 @@ data class Tournament(
     val matchDurationMinutes: Int = 20,
     val status: TournamentStatus = TournamentStatus.REGISTRATION,
     val rules: String = "1. Emulators strictly prohibited.\n2. Hacks/Cheats result in immediate lifetime ban.\n3. Take screenshot of victory screen for proof.\n4. Join room within 5 mins of schedule.",
-    val firstPrize: Double = 3000.0,
-    val secondPrize: Double = 1500.0,
-    val thirdPrize: Double = 500.0,
     val championName: String? = null,
     // Room credentials distributed by admin to registered participants
     val roomId: String? = null,
     val roomPassword: String? = null,
-    val roomVisible: Boolean = false
+    val roomVisible: Boolean = false,
+    val createdAt: Long = System.currentTimeMillis()
 )
 
 enum class RegistrationStatus {
@@ -99,6 +103,14 @@ data class TournamentRegistration(
     val timestamp: Long = System.currentTimeMillis()
 )
 
+data class GameCategory(
+    val id: String = UUID.randomUUID().toString(),
+    val game: String, // Free Fire, PUBG Mobile, DLS, eFootball
+    val modes: List<String> = emptyList(), // Solo BR, Duo BR, Squad BR, etc.
+    val logoUrl: String = "",
+    val bannerUrl: String = ""
+)
+
 data class TeamMember(
     val userId: String,
     val username: String,
@@ -121,10 +133,15 @@ data class Team(
     val wins: Int = 0,
     val losses: Int = 0,
     val points: Int = 0,
-    val isApproved: Boolean = true
+    val isApproved: Boolean = true,
+    val walletBalance: Double = 0.0,
+    val createdAt: Long = System.currentTimeMillis()
 ) {
     val winRate: Float
         get() = if (matches > 0) (wins.toFloat() / matches) * 100f else 0f
+    
+    val isLive: Boolean
+        get() = members.isNotEmpty() && members.filter { !it.isCaptain }.size >= 1 // At least captain + 1 member
 }
 
 enum class ChallengeStatus {
@@ -134,7 +151,8 @@ enum class ChallengeStatus {
     CANCELLED,
     SCHEDULED,
     LIVE,
-    COMPLETED
+    COMPLETED,
+    EXPIRED
 }
 
 data class TeamChallenge(
@@ -144,10 +162,17 @@ data class TeamChallenge(
     val challengedTeamId: String,
     val challengedTeamName: String,
     val game: String = "Free Fire",
+    val mode: String = "Squad BR",
     val stakeAmount: Double = 0.0,
     val scheduledTime: String = "Tomorrow, 08:00 PM",
     val status: ChallengeStatus = ChallengeStatus.PENDING,
-    val winnerTeamId: String? = null
+    val winnerTeamId: String? = null,
+    val roomId: String? = null,
+    val roomPassword: String? = null,
+    val challengerProofUrl: String? = null,
+    val challengedProofUrl: String? = null,
+    val expiresAt: Long = System.currentTimeMillis() + (10 * 60 * 1000), // 10 minutes
+    val createdAt: Long = System.currentTimeMillis()
 )
 
 enum class MatchStatus {
@@ -223,7 +248,7 @@ data class PaymentTransaction(
     val method: String, // "bKash", "Nagad", "Rocket", "Wallet"
     val senderNumber: String = "", // Player's bKash/Nagad/Rocket account number
     val transactionId: String,
-    val type: String, // "WALLET_TOPUP", "TOURNAMENT_ENTRY", "PRIZE_PAYOUT"
+    val type: String, // "WALLET_TOPUP", "TOURNAMENT_ENTRY", "PRIZE_PAYOUT", "TEAM_DEPOSIT", "TEAM_WITHDRAWAL"
     val status: PaymentStatus = PaymentStatus.PENDING,
     val timestamp: Long = System.currentTimeMillis(),
     val note: String = ""
@@ -234,8 +259,9 @@ data class NotificationItem(
     val userId: String,
     val title: String,
     val message: String,
-    val type: String = "INFO", // MATCH, TOURNAMENT, PAYMENT, SYSTEM
+    val type: String = "INFO", // MATCH, TOURNAMENT, PAYMENT, SYSTEM, CHALLENGE
     val isRead: Boolean = false,
+    val relatedId: String? = null, // Challenge ID, Match ID, etc.
     val timestamp: Long = System.currentTimeMillis()
 )
 
@@ -256,7 +282,9 @@ data class SystemSettings(
     val referralBonus: Double = 50.0,
     val minWithdrawal: Double = 100.0,
     val maintenanceMode: Boolean = false,
-    val autoAutomationEnabled: Boolean = true
+    val autoAutomationEnabled: Boolean = true,
+    val teamWithdrawalStartHour: Int = 19, // 7 PM
+    val teamWithdrawalEndHour: Int = 23 // 11 PM
 )
 
 data class WorkerStatus(
@@ -274,6 +302,11 @@ enum class ChallengePurpose {
     PLAYER
 }
 
+enum class ChallengeRule {
+    REGULAR,
+    HEADSHOT_ONLY
+}
+
 enum class UserChallengeStatus {
     PENDING,
     ACCEPTED,
@@ -282,17 +315,24 @@ enum class UserChallengeStatus {
     UNDER_REVIEW,
     COMPLETED,
     CANCELLED,
-    REJECTED
+    REJECTED,
+    EXPIRED
 }
 
 data class UserChallenge(
     val id: String = UUID.randomUUID().toString(),
     val challengerUid: String = "",
     val challengerName: String = "",
+    val challengerImageUrl: String = "",
     val opponentUid: String = "",
     val opponentName: String = "",
+    val opponentImageUrl: String = "",
     val game: String = "Free Fire",
-    val stakeAmount: Double = 50.0, // Fixed 50 TK each = 100 TK pool
+    val mode: String = "Squad BR",
+    val map: String = "Bermuda",
+    val rule: ChallengeRule = ChallengeRule.REGULAR,
+    val note: String = "",
+    val stakeAmount: Double = 50.0, // 50-200 BDT
     val status: UserChallengeStatus = UserChallengeStatus.PENDING,
     val roomId: String? = null,
     val roomPassword: String? = null,
@@ -300,15 +340,36 @@ data class UserChallenge(
     val opponentProofUrl: String? = null,
     val winnerUid: String? = null,
     val winnerName: String? = null,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val expiresAt: Long = System.currentTimeMillis() + (10 * 60 * 1000), // 10 minutes default
+    val acceptedAt: Long? = null,
+    val roomSetAt: Long? = null,
+    val proofDeadlineAt: Long? = null,
+    val completedAt: Long? = null
 )
 
-// ── Welcome Popup ────────────────────────────────────────────────────────────
+// ── Welcome Popup ─────────────────────────────────────────────────────────
 
 data class WelcomePopupConfig(
     val isVisible: Boolean = false,
-    val title: String = "Welcome to Khelo BD!",
-    val message: String = "Bangladesh's #1 Esports Tournament Platform. Compete, Win & Earn daily.",
+    val title: String = "স্বাগতম Khelo BD এ!",
+    val message: String = "বাংলাদেশের সেরা ই-স্পোর্টস প্ল্যাটফর্ম। প্রতিদিন প্রতিযোগিতা করুন, জিতুন এবং আয় করুন।",
     val imageUrl: String = "",
-    val buttonText: String = "Let's Play!"
+    val buttonText: String = "খেলা শুরু করুন!"
 )
+
+// ── Bengali Localization Helper ──────────────────────────────────────────────
+
+object BengaliStrings {
+    const val INSUFFICIENT_BALANCE = "অপর্যাপ্ত ব্যালেন্স। অনুগ্রহ করে আপনার ওয়ালেট টপ-আপ করুন।"
+    const val INSUFFICIENT_BALANCE_WITHDRAWAL = "আপনার টিম ওয়ালেটে পর্যাপ্ত টাকা নেই।"
+    const val WITHDRAWAL_TIME_RESTRICTED = "টিম উইথড্রোয়াল শুধুমাত্র সন্ধ্যা ৭টা থেকে রাত ১১টার মধ্যে সম্ভব। আপনার স্থানীয় সময় চেক করুন।"
+    const val CHALLENGE_EXPIRED = "এই চ্যালেঞ্জ মেয়াদোত্তীর্ণ হয়েছে।"
+    const val CHALLENGE_ACCEPTED = "চ্যালেঞ্জ গৃহীত! চ্যালেঞ্জার শীঘ্রই রুম আইডি শেয়ার করবে।"
+    const val ROOM_CREDENTIALS_REQUIRED = "রুম আইডি এবং পাসওয়ার্ড উভয়ই প্রয়োজনীয়।"
+    const val PROOF_SUBMITTED = "প্রমাণ সাবমিট করা হয়েছে। প্রশাসক দ্বারা যাচাইয়ের জন্য অপেক্ষা করছে।"
+    const val TEAM_MINIMUM_MEMBERS = "টিম চ্যালেঞ্জের জন্য কমপক্ষে ২ জন সক্রিয় সদস্য প্রয়োজন।"
+    const val CHALLENGE_AMOUNT_RANGE = "চ্যালেঞ্জ পরিমাণ ৫০ থেকে ২০০ টাকার মধ্যে হতে হবে।"
+    const val WARNING_CHALLENGE = "সতর্কতা: একবার চ্যালেঞ্জ গৃহীত হলে, উভয় খেলোয়াড়ের ওয়ালেট থেকে টাকা কেটে নেওয়া হবে।"
+    const val CANCELLED_CHALLENGE = "চ্যালেঞ্জ বাতিল করা হয়েছে এবং আপনার টাকা ফেরত দেওয়া হয়েছে।"
+}

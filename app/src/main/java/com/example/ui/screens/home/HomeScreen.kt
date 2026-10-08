@@ -51,7 +51,7 @@ fun HomeScreen(
         contentPadding = PaddingValues(vertical = 14.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        // Hero Championship Banner (Sharp Rectangular, Flat Overlay)
+        // Hero Championship Banner
         item {
             HeroBanner(
                 currentUser = currentUser,
@@ -60,7 +60,7 @@ fun HomeScreen(
             )
         }
 
-        // Quick Action Grid (Sharp Rectangles)
+        // Quick Action Grid
         item {
             QuickActionsRow(
                 onJoinTournaments = onNavigateTournaments,
@@ -70,8 +70,97 @@ fun HomeScreen(
             )
         }
 
-        // Live & Upcoming Matches
-        val activeMatches = matches.filter { it.status == MatchStatus.LIVE || it.status == MatchStatus.ROOM_READY || it.status == MatchStatus.SCHEDULED }.take(4)
+        // ====== JOIN OPEN TOURNAMENTS (PRIMARY) ======
+        val joinOpenTournaments = tournaments.filter { 
+            it.status == TournamentStatus.REGISTRATION 
+        }.sortedByDescending { it.createdAt }.take(6)
+        
+        if (joinOpenTournaments.isNotEmpty()) {
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .background(KheloGreenBright, RectangleShape)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "যোগদানের জন্য খোলা",
+                            color = TextPrimary,
+                            fontWeight = FontWeight.Black,
+                            fontSize = 12.sp,
+                            letterSpacing = 0.5.sp
+                        )
+                    }
+                    TextButton(onClick = onNavigateTournaments, shape = RectangleShape) {
+                        Text("সব দেখুন", color = KheloGreenBright, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+
+            items(joinOpenTournaments) { tournament ->
+                HomeTournamentCard(
+                    tournament = tournament,
+                    onClick = { onSelectTournament(tournament) }
+                )
+            }
+        }
+
+        // ====== LIVE TOURNAMENTS ======
+        val liveTournaments = tournaments.filter { 
+            it.status == TournamentStatus.GROUP_STAGE || 
+            it.status == TournamentStatus.KNOCKOUT ||
+            it.status == TournamentStatus.FINAL
+        }.sortedByDescending { it.createdAt }.take(3)
+
+        if (liveTournaments.isNotEmpty()) {
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .background(EsportsRed, RectangleShape)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "লাইভ টুর্নামেন্ট",
+                            color = TextPrimary,
+                            fontWeight = FontWeight.Black,
+                            fontSize = 12.sp,
+                            letterSpacing = 0.5.sp
+                        )
+                    }
+                    TextButton(onClick = onNavigateTournaments, shape = RectangleShape) {
+                        Text("সব দেখুন", color = KheloGreenBright, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+
+            items(liveTournaments) { tournament ->
+                HomeTournamentCard(
+                    tournament = tournament,
+                    onClick = { onSelectTournament(tournament) }
+                )
+            }
+        }
+
+        // ====== LIVE & UPCOMING MATCHES ======
+        val activeMatches = matches.filter { 
+            it.status == MatchStatus.LIVE || 
+            it.status == MatchStatus.ROOM_READY || 
+            it.status == MatchStatus.SCHEDULED 
+        }.take(4)
+        
         if (activeMatches.isNotEmpty()) {
             item {
                 Row(
@@ -87,7 +176,7 @@ fun HomeScreen(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "LIVE & UPCOMING MATCHES",
+                            text = "লাইভ ও আসন্ন ম্যাচ",
                             color = TextPrimary,
                             fontWeight = FontWeight.Black,
                             fontSize = 12.sp,
@@ -95,7 +184,7 @@ fun HomeScreen(
                         )
                     }
                     TextButton(onClick = onNavigateMatches, shape = RectangleShape) {
-                        Text("View All (${matches.size})", color = KheloGreenBright, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Text("সব দেখুন (${matches.size})", color = KheloGreenBright, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -105,36 +194,29 @@ fun HomeScreen(
             }
         }
 
-        // Featured Active Tournaments Header
+        // ====== TOP PLAYERS ======
         item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "FEATURED TOURNAMENTS",
-                    color = TextPrimary,
-                    fontWeight = FontWeight.Black,
-                    fontSize = 12.sp,
-                    letterSpacing = 0.5.sp
-                )
-                TextButton(onClick = onNavigateTournaments, shape = RectangleShape) {
-                    Text("Explore All", color = KheloGreenBright, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                }
-            }
-        }
-
-        // Featured Tournaments Cards
-        val featuredTournaments = tournaments.take(4)
-        items(featuredTournaments) { tour ->
-            HomeTournamentCard(
-                tournament = tour,
-                onClick = { onSelectTournament(tour) }
+            Text(
+                text = "শীর্ষ খেলোয়াড়",
+                color = TextPrimary,
+                fontWeight = FontWeight.Black,
+                fontSize = 12.sp,
+                letterSpacing = 0.5.sp
             )
         }
 
-        // Champion Hall of Fame
+        // ====== TOP SQUADS / TEAMS ======
+        item {
+            Text(
+                text = "শীর্ষ দল",
+                color = TextPrimary,
+                fontWeight = FontWeight.Black,
+                fontSize = 12.sp,
+                letterSpacing = 0.5.sp
+            )
+        }
+
+        // ====== RECENT CHAMPION ======
         val completedTournaments = tournaments.filter { it.status == TournamentStatus.COMPLETED }
         if (completedTournaments.isNotEmpty()) {
             item {
@@ -166,7 +248,7 @@ fun HomeScreen(
                         Spacer(modifier = Modifier.width(10.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "RECENT CHAMPION",
+                                text = "সম্প্রতি চ্যাম্পিয়ন",
                                 color = EsportsGold,
                                 fontSize = 9.sp,
                                 fontWeight = FontWeight.Black,
@@ -180,7 +262,7 @@ fun HomeScreen(
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "Winner of ${champ.title} (৳${champ.firstPrize.toInt()})",
+                                text = "${champ.title} এর বিজয়ী (৳${champ.firstPrize.toInt()})",
                                 color = TextSecondary,
                                 fontSize = 11.sp
                             )
@@ -216,7 +298,7 @@ fun HeroBanner(
                 contentScale = ContentScale.Crop
             )
 
-            // Flat Solid Dark Overlay (NO Gradient)
+            // Flat Solid Dark Overlay
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -251,7 +333,7 @@ fun HeroBanner(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "BANGLADESH PRO LEAGUE",
+                                text = "খেলো বাংলাদেশ",
                                 color = KheloGreenBright,
                                 fontSize = 9.sp,
                                 fontWeight = FontWeight.Black
@@ -260,7 +342,7 @@ fun HeroBanner(
                     }
 
                     Text(
-                        text = "Player: ${currentUser.username}",
+                        text = "খেলোয়াড়: ${currentUser.username}",
                         color = Color.White,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
@@ -270,14 +352,14 @@ fun HeroBanner(
                 Spacer(modifier = Modifier.height(20.dp))
 
                 Text(
-                    text = "COMPETE. WIN. EARN.",
+                    text = "প্রতিযোগিতা করুন। জিতুন। উপার্জন করুন।",
                     color = TextPrimary,
                     fontSize = 19.sp,
                     fontWeight = FontWeight.Black,
                     letterSpacing = 0.5.sp
                 )
                 Text(
-                    text = "Daily tournaments for Free Fire, PUBG Mobile & eFootball",
+                    text = "Free Fire, PUBG Mobile ও eFootball এ প্রতিদিনের টুর্নামেন্ট",
                     color = TextSecondary,
                     fontSize = 11.sp,
                     maxLines = 1,
@@ -297,7 +379,7 @@ fun HeroBanner(
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                         modifier = Modifier.height(34.dp)
                     ) {
-                        Text("Join Tournaments", color = DarkBg, fontWeight = FontWeight.Black, fontSize = 11.sp)
+                        Text("টুর্নামেন্টে যোগ দিন", color = DarkBg, fontWeight = FontWeight.Black, fontSize = 11.sp)
                     }
 
                     OutlinedButton(
@@ -309,7 +391,7 @@ fun HeroBanner(
                     ) {
                         Icon(imageVector = Icons.Default.Add, contentDescription = null, tint = KheloGreenBright, modifier = Modifier.size(13.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Deposit (bKash/Nagad)", color = KheloGreenBright, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                        Text("জমা করুন", color = KheloGreenBright, fontWeight = FontWeight.Bold, fontSize = 11.sp)
                     }
                 }
             }
@@ -329,32 +411,32 @@ fun QuickActionsRow(
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         QuickActionButton(
-            title = "Tournaments",
-            subtitle = "Active Cups",
+            title = "টুর্নামেন্ট",
+            subtitle = "সক্রিয় কাপ",
             icon = Icons.Default.EmojiEvents,
             color = EsportsGold,
             onClick = onJoinTournaments,
             modifier = Modifier.weight(1f)
         )
         QuickActionButton(
-            title = "My Matches",
-            subtitle = "Rooms",
+            title = "আমার ম্যাচ",
+            subtitle = "রুম",
             icon = Icons.Default.Gamepad,
             color = KheloGreenBright,
             onClick = onMyMatches,
             modifier = Modifier.weight(1f)
         )
         QuickActionButton(
-            title = "Squads",
-            subtitle = "Clash",
+            title = "দল",
+            subtitle = "ক্লাশ",
             icon = Icons.Default.Groups,
             color = EsportsCyan,
             onClick = onTeamClash,
             modifier = Modifier.weight(1f)
         )
         QuickActionButton(
-            title = "Rankings",
-            subtitle = "Top BD",
+            title = "র‍্যাঙ্কিং",
+            subtitle = "শীর্ষ বাংলা",
             icon = Icons.Default.Leaderboard,
             color = EsportsOrange,
             onClick = onLeaderboard,
@@ -520,7 +602,7 @@ fun HomeMatchItem(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(imageVector = Icons.Default.Key, contentDescription = null, tint = KheloGreenBright, modifier = Modifier.size(11.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Room Ready — Tap to view", color = KheloGreenBright, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        Text("রুম প্রস্তুত", color = KheloGreenBright, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -533,6 +615,13 @@ fun HomeTournamentCard(
     tournament: Tournament,
     onClick: () -> Unit
 ) {
+    val statusColor = when (tournament.status) {
+        TournamentStatus.REGISTRATION -> KheloGreenBright
+        TournamentStatus.GROUP_STAGE, TournamentStatus.KNOCKOUT, TournamentStatus.FINAL -> EsportsRed
+        TournamentStatus.COMPLETED -> EsportsGold
+        else -> TextMuted
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -560,7 +649,26 @@ fun HomeTournamentCard(
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                     )
                 }
-                TournamentStatusBadge(status = tournament.status)
+                
+                // Status Badge
+                Surface(
+                    color = statusColor.copy(alpha = 0.2f),
+                    shape = RectangleShape,
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = when (tournament.status) {
+                            TournamentStatus.REGISTRATION -> "যোগদানের জন্য খোলা"
+                            TournamentStatus.GROUP_STAGE, TournamentStatus.KNOCKOUT, TournamentStatus.FINAL -> "লাইভ"
+                            TournamentStatus.COMPLETED -> "সম্পন্ন"
+                            else -> "অন্যান্য"
+                        },
+                        color = statusColor,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Black,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(6.dp))
@@ -592,7 +700,7 @@ fun HomeTournamentCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Text("PRIZE POOL", color = TextMuted, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                    Text("পুরস্কার পুল", color = TextMuted, fontSize = 8.sp, fontWeight = FontWeight.Bold)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.EmojiEvents, contentDescription = null, tint = EsportsGold, modifier = Modifier.size(13.dp))
                         Spacer(modifier = Modifier.width(3.dp))
@@ -601,9 +709,9 @@ fun HomeTournamentCard(
                 }
 
                 Column {
-                    Text("ENTRY FEE", color = TextMuted, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                    Text("অংশগ্রহণের ফি", color = TextMuted, fontSize = 8.sp, fontWeight = FontWeight.Bold)
                     Text(
-                        text = if (tournament.entryFee == 0.0) "FREE" else "৳${tournament.entryFee.toInt()}",
+                        text = if (tournament.entryFee == 0.0) "বিনামূল্যে" else "৳${tournament.entryFee.toInt()}",
                         color = if (tournament.entryFee == 0.0) KheloGreenBright else TextPrimary,
                         fontWeight = FontWeight.Black,
                         fontSize = 12.sp
@@ -611,7 +719,7 @@ fun HomeTournamentCard(
                 }
 
                 Column {
-                    Text("SLOTS", color = TextMuted, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                    Text("স্লট", color = TextMuted, fontSize = 8.sp, fontWeight = FontWeight.Bold)
                     Text(
                         text = "${tournament.registeredCount}/${tournament.maxParticipants}",
                         color = TextPrimary,
